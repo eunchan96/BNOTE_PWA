@@ -67,19 +67,19 @@ export default async function BibleChapterPage({
                 </p>
               </div>
 
-              {/* 절 중간에 소제목이 끼어드는 아주 드문 경우 (예: 창 35:22) */}
+              {/* title2가 있을 때만(절 중간에 소제목이 끼어드는 경우) 두 번째 줄을 그린다 */}
               {verse.title2 && (
-                <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
-                  {verse.title2}
-                </p>
-              )}
-              {verse.text2 && (
-                <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                  <span className="w-[26px] shrink-0" />
-                  <p className="flex-1 text-base leading-relaxed text-text-primary">
-                    {verse.text2}
+                <>
+                  <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
+                    {verse.title2}
                   </p>
-                </div>
+                  <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
+                    <span className="w-[26px] shrink-0" />
+                    <p className="flex-1 text-base leading-relaxed text-text-primary">
+                      {verse.text2}
+                    </p>
+                  </div>
+                </>
               )}
             </li>
           ))}
