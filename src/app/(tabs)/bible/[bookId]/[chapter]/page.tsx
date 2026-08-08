@@ -57,25 +57,29 @@ export default async function BibleChapterPage({
                   {verse.title}
                 </p>
               )}
+
               <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
                 <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
                   {verse.verse}
                 </span>
-                <div className="flex flex-1 flex-col">
-                  <p className="text-base leading-relaxed text-text-primary">
-                    {verse.text}
-                  </p>
-                  {verse.text2 && (
-                    <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
-                      {verse.text2}
-                    </p>
-                  )}
-                </div>
+                <p className="flex-1 text-base leading-relaxed text-text-primary">
+                  {verse.text}
+                </p>
               </div>
+
+              {/* 절 중간에 소제목이 끼어드는 아주 드문 경우 (예: 창 35:22) */}
               {verse.title2 && (
                 <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
                   {verse.title2}
                 </p>
+              )}
+              {verse.text2 && (
+                <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
+                  <span className="w-[26px] shrink-0" />
+                  <p className="flex-1 text-base leading-relaxed text-text-primary">
+                    {verse.text2}
+                  </p>
+                </div>
               )}
             </li>
           ))}
