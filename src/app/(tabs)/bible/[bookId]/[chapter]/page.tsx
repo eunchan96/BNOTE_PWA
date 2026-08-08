@@ -47,7 +47,11 @@ export default async function BibleChapterPage({
         <ScrollToVerse verse={targetVerse} />
         <ol className="flex flex-col">
           {verses.map((verse) => (
-            <li key={verse.verse} id={`verse-${verse.verse}`} className="scroll-mt-14">
+            <li
+              key={verse.verse}
+              id={`verse-${verse.verse}`}
+              className="scroll-mt-14"
+            >
               {verse.title && (
                 <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
                   {verse.title}

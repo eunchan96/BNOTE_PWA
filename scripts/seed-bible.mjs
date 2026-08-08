@@ -13,9 +13,9 @@ import path from "node:path";
 
 const CHUNK_SIZE = 2000;
 
-// Android/BNOTE_BE와 동일한 파일명 규칙. flat 포맷만 우선 지원.
-// NIV/ESV(nested 포맷)는 파일을 받으면 별도 파서를 추가해야 합니다.
-const FLAT_TRANSLATIONS = ["nkrv", "krv", "ksb", "klb", "easy", "kjv"];
+// public/bible-data/*.json 은 전부 flat 포맷으로 정규화되어 저장됩니다.
+// (NIV/ESV 원본은 nested 구조였지만, 로컬 파일로 저장할 때 이미 flat으로 변환해뒀습니다.)
+const FLAT_TRANSLATIONS = ["nkrv", "krv", "ksb", "klb", "easy", "kjv", "niv", "esv"];
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
