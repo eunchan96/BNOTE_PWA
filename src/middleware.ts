@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser(); // 세션 갱신 트리거
+  await supabase.auth.getUser();
 
   return response;
 }

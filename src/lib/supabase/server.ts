@@ -18,8 +18,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component에서 호출되면 무시해도 됨
-            // (미들웨어가 세션 갱신을 대신 처리)
+            // Server Component에서 호출되면 무시 (미들웨어가 세션 갱신 처리)
           }
         },
       },

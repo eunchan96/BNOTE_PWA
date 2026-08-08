@@ -1,0 +1,35 @@
+"use client";
+
+import BookChapterPickerSheet from "@/components/BookChapterPickerSheet";
+import { useState } from "react";
+
+export default function BibleLocationPicker({
+  bookId,
+  title,
+  translation,
+}: {
+  bookId: number;
+  title: string;
+  translation: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="shrink-0 text-base font-bold text-white"
+      >
+        {title}
+      </button>
+      {isOpen && (
+        <BookChapterPickerSheet
+          onClose={() => setIsOpen(false)}
+          initialBookId={bookId}
+          translation={translation}
+        />
+      )}
+    </>
+  );
+}
