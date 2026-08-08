@@ -16,6 +16,10 @@ export default function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  if (pathname === "/login") {
+    return null;
+  }
+
   const chapterMatch = pathname.match(CHAPTER_PATH);
   const translation = searchParams.get("translation") ?? "NKRV";
 
