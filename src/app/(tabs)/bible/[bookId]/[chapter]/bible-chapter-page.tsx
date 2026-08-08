@@ -2,7 +2,6 @@ import BibleTopBar from "@/components/BibleTopBar";
 import ScrollToVerse from "@/components/ScrollToVerse";
 import { getChapterVerses } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
 const DEFAULT_TRANSLATION = "NKRV";
@@ -27,8 +26,7 @@ export default async function BibleChapterPage({
     notFound();
   }
 
-  const supabase = await createClient();
-  const verses = await getChapterVerses(supabase, bookId, chapter, translation);
+  const verses = await getChapterVerses(bookId, chapter, translation);
 
   if (verses.length === 0) {
     notFound();
@@ -49,11 +47,7 @@ export default async function BibleChapterPage({
         <ScrollToVerse verse={targetVerse} />
         <ol className="flex flex-col">
           {verses.map((verse) => (
-            <li
-              key={verse.verse}
-              id={`verse-${verse.verse}`}
-              className="scroll-mt-14"
-            >
+            <li key={verse.verse} id={`verse-${verse.verse}`} className="scroll-mt-14">
               {verse.title && (
                 <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
                   {verse.title}
