@@ -54,10 +54,12 @@ export default function SermonFormClient({
   function refLabel(ref: BibleRefInput) {
     const book = getBook(ref.startBookId);
     const unit = chapterUnit(ref.startBookId);
-    if (ref.startVerse === ref.endVerse) {
-      return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}절`;
+    if (ref.startChapter === ref.endChapter) {
+      return ref.startVerse === ref.endVerse
+        ? `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}절`
+        : `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}~${ref.endVerse}절`;
     }
-    return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}~${ref.endVerse}절`;
+    return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}절~${ref.endChapter}${unit} ${ref.endVerse}절`;
   }
 
   function formatDateLabel(dateStr: string): string {
@@ -178,7 +180,7 @@ export default function SermonFormClient({
         </FormRow>
 
         <FormRow label="본문" className="mt-2">
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {refs.length === 0 ? (
               <button
                 type="button"
@@ -194,7 +196,7 @@ export default function SermonFormClient({
                     key={index}
                     type="button"
                     onClick={() => setRangePicker({ index })}
-                    className="cursor-pointer rounded-lg bg-input-background px-3 py-2 text-[15px] text-text-primary"
+                    className="min-w-0 flex-1 cursor-pointer truncate rounded-lg bg-input-background px-3 py-2 text-left text-[15px] text-text-primary"
                   >
                     {refLabel(ref)}
                   </button>
@@ -203,7 +205,7 @@ export default function SermonFormClient({
                   type="button"
                   onClick={() => setRangePicker({ index: null })}
                   aria-label="본문 추가"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg bg-input-background text-zinc-400"
+                  className="w-10 shrink-0 cursor-pointer rounded-lg bg-input-background text-lg text-zinc-400"
                 >
                   +
                 </button>
@@ -252,7 +254,7 @@ export default function SermonFormClient({
           </div>
         </div>
 
-        <div className="mt-3 flex gap-1">
+        <div className="mt-3 flex gap-2">
           <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-input-background px-3 py-3 text-[15px] text-text-primary">
             {isUploading
               ? "업로드 중..."

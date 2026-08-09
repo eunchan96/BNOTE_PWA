@@ -47,9 +47,11 @@ export default async function SermonDetailPage({
               const book = getBook(r.startBookId);
               const unit = chapterUnit(r.startBookId);
               const label =
-                r.startVerse === r.endVerse
-                  ? `${book?.name} ${r.startChapter}${unit} ${r.startVerse}절`
-                  : `${book?.name} ${r.startChapter}${unit} ${r.startVerse}~${r.endVerse}절`;
+                r.startChapter === r.endChapter
+                  ? r.startVerse === r.endVerse
+                    ? `${book?.name} ${r.startChapter}${unit} ${r.startVerse}절`
+                    : `${book?.name} ${r.startChapter}${unit} ${r.startVerse}~${r.endVerse}절`
+                  : `${book?.name} ${r.startChapter}${unit} ${r.startVerse}절~${r.endChapter}${unit} ${r.endVerse}절`;
               return (
                 <Link
                   key={i}

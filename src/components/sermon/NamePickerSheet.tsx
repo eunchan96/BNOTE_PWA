@@ -42,22 +42,12 @@ export default function NamePickerSheet({
         className="absolute inset-0 cursor-pointer bg-black/40"
       />
       <div className="relative flex max-h-[70vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
-        <h2 className="px-4 pt-4 pb-2 text-lg font-bold text-zinc-900">{title}</h2>
+        <h2 className="px-4 pt-4 pb-2 text-lg font-bold text-zinc-900">
+          {title}
+        </h2>
         <div className="border-t border-divider" />
 
         <div className="overflow-y-auto py-2">
-          <button
-            type="button"
-            onClick={() => {
-              onSelect(null);
-              onClose();
-            }}
-            className={`block w-full cursor-pointer px-4 py-3 text-left text-[15px] ${
-              selectedId === null ? "font-bold text-brown-primary" : "text-text-primary"
-            }`}
-          >
-            미지정
-          </button>
           {list.map((item) => (
             <button
               key={item.id}
@@ -67,12 +57,28 @@ export default function NamePickerSheet({
                 onClose();
               }}
               className={`block w-full cursor-pointer px-4 py-3 text-left text-[15px] ${
-                selectedId === item.id ? "font-bold text-brown-primary" : "text-text-primary"
+                selectedId === item.id
+                  ? "font-bold text-brown-primary"
+                  : "text-text-primary"
               }`}
             >
               {item.name}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              onSelect(null);
+              onClose();
+            }}
+            className={`block w-full cursor-pointer px-4 py-3 text-left text-[15px] ${
+              selectedId === null
+                ? "font-bold text-brown-primary"
+                : "text-text-primary"
+            }`}
+          >
+            미지정
+          </button>
         </div>
 
         <div className="flex items-center gap-2 border-t border-divider px-4 pt-3">
