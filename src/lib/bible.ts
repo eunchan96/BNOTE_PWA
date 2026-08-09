@@ -188,6 +188,7 @@ async function loadTranslation(
       list.sort((a, b) => a.verse - b.verse);
     }
 
+    buildSearchCache(code, byChapter);
     cache.set(code, byChapter);
     return byChapter;
   })();
@@ -205,4 +206,54 @@ export async function getChapterVerses(
 ): Promise<BibleVerseRow[]> {
   const byChapter = await loadTranslation(translation);
   return byChapter.get(chapterKey(bookId, chapter)) ?? [];
+}
+
+// ── 검색 ──────────────────────────────────────────
+// 안드로이드 BibleDao.searchVerses와 동일한 로직: 공백 제거 후 부분일치, text 컬럼만, 최대 200개.
+
+export type SearchableVerse = {
+  bookId: number;
+  chapter: number;
+  verse: number;
+  text: string;
+};
+
+const searchCache = new Map<string, SearchableVerse[]>();
+
+function buildSearchCache(
+  code: string,
+  byChapter: Map<string, BibleVerseRow[]>,
+) {
+  const flat: SearchableVerse[] = [];
+  for (const [key, rows] of byChapter.entries()) {
+    const [bookIdStr, chapterStr] = key.split("-");
+    const bookId = Number(bookIdStr);
+    const chapter = Number(chapterStr);
+    for (const row of rows) {
+      flat.push({ bookId, chapter, verse: row.verse, text: row.text });
+    }
+  }
+  flat.sort((a, b) => a.bookId - b.bookId || a.chapter - b.chapter || a.verse - b.verse);
+  searchCache.set(code, flat);
+}
+
+export async function searchVerses(
+  translation: string,
+  keyword: string,
+): Promise<SearchableVerse[]> {
+  const code = translation.toLowerCase();
+  await loadTranslation(translation);
+
+  const all = searchCache.get(code) ?? [];
+  const normalizedKeyword = keyword.replace(/\s/g, "");
+  if (normalizedKeyword === "") return [];
+
+  const results: SearchableVerse[] = [];
+  for (const v of all) {
+    if (v.text.replace(/\s/g, "").includes(normalizedKeyword)) {
+      results.push(v);
+      if (results.length >= 200) break;
+    }
+  }
+  return results;
 }

@@ -16,7 +16,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/bible/search") {
     return null;
   }
 
