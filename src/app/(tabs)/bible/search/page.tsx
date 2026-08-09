@@ -165,7 +165,7 @@ export default function BibleSearchPage() {
           type="button"
           onClick={() => router.back()}
           aria-label="뒤로가기"
-          className="flex h-10 w-10 items-center justify-center"
+          className="flex h-10 w-10 items-center justify-center cursor-pointer"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
             <path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z" />
@@ -203,7 +203,7 @@ export default function BibleSearchPage() {
                 clearSearchHistory();
                 setHistory([]);
               }}
-              className="px-2 text-[13px] text-zinc-400"
+              className="px-2 text-[13px] text-zinc-400 cursor-pointer"
             >
               전체 삭제
             </button>
@@ -213,7 +213,7 @@ export default function BibleSearchPage() {
               <button
                 type="button"
                 onClick={() => pickHistory(word)}
-                className="flex-1 py-3 text-left text-[15px] text-text-primary"
+                className="flex-1 py-3 text-left text-[15px] text-text-primary cursor-pointer"
               >
                 {word}
               </button>
@@ -224,7 +224,7 @@ export default function BibleSearchPage() {
                   setHistory(getSearchHistory());
                 }}
                 aria-label="삭제"
-                className="flex h-9 w-9 items-center justify-center text-zinc-400"
+                className="flex h-9 w-9 items-center justify-center text-zinc-400 cursor-pointer"
               >
                 ✕
               </button>
@@ -240,7 +240,7 @@ export default function BibleSearchPage() {
               <button
                 type="button"
                 onClick={() => goToResult(r)}
-                className="flex w-full gap-3 p-3 text-left"
+                className="flex w-full gap-3 p-3 text-left cursor-pointer"
               >
                 <span className="w-16 shrink-0 font-bold text-brown-primary">
                   {SHORT_NAMES[r.bookId - 1] ?? "?"} {r.chapter}:{r.verse}

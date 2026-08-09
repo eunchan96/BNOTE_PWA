@@ -86,7 +86,7 @@ export default function BookChapterPickerSheet({
         type="button"
         aria-label="닫기"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 cursor-pointer"
       />
 
       <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
@@ -134,7 +134,7 @@ export default function BookChapterPickerSheet({
                           isSelected
                             ? "bg-brown-primary text-white"
                             : "bg-zinc-100 text-zinc-800"
-                        }`}
+                        } cursor-pointer`}
                       >
                         {book.name}
                       </button>
@@ -196,7 +196,7 @@ function PickerTab({
       onClick={onClick}
       className={`flex-1 border-b-2 py-3 text-[15px] ${color} ${
         selected ? "border-brown-primary font-bold" : "border-transparent"
-      }`}
+      } cursor-pointer`}
     >
       {label}
     </button>
@@ -223,7 +223,7 @@ function NumberGrid({
             value === selected
               ? "bg-brown-primary text-white"
               : "bg-zinc-100 text-zinc-800"
-          }`}
+          } cursor-pointer`}
         >
           {value}
         </button>

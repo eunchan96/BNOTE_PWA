@@ -41,7 +41,7 @@ export default async function LoginPage({
         <form action={signInWithKakao.bind(null, redirectPath)}>
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#FEE500] font-medium text-black"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#FEE500] font-medium text-black cursor-pointer"
           >
             카카오로 시작하기
           </button>
@@ -50,7 +50,7 @@ export default async function LoginPage({
         <form action={signInWithGoogle.bind(null, redirectPath)}>
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white font-medium text-zinc-800"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white font-medium text-zinc-800 cursor-pointer"
           >
             구글로 시작하기
           </button>

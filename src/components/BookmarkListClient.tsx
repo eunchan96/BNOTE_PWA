@@ -45,7 +45,7 @@ export default function BookmarkListClient({
           type="button"
           onClick={() => router.back()}
           aria-label="뒤로가기"
-          className="flex h-10 w-10 items-center justify-center"
+          className="flex h-10 w-10 items-center justify-center cursor-pointer"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
             <path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z" />
@@ -56,7 +56,7 @@ export default function BookmarkListClient({
           <button
             type="button"
             onClick={() => setIsEditMode((v) => !v)}
-            className="px-3 text-sm text-white"
+            className="px-3 text-sm text-white cursor-pointer"
           >
             {isEditMode ? "완료" : "관리"}
           </button>
@@ -78,7 +78,7 @@ export default function BookmarkListClient({
             <button
               type="button"
               onClick={() => !isEditMode && goToVerse(row)}
-              className="flex-1 py-3 text-left"
+              className="flex-1 py-3 text-left cursor-pointer"
             >
               <p className="text-[13px] font-bold text-brown-primary">
                 {getBook(row.bookId)?.name} {row.chapter}:{row.verse}
@@ -90,7 +90,7 @@ export default function BookmarkListClient({
                 type="button"
                 onClick={() => handleDelete(row)}
                 aria-label="삭제"
-                className="flex h-10 w-10 shrink-0 items-center justify-center text-zinc-400"
+                className="flex h-10 w-10 shrink-0 items-center justify-center text-zinc-400 cursor-pointer"
               >
                 <svg
                   width="20"

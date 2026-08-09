@@ -56,7 +56,7 @@ export default function TranslationPickerSheet({
         type="button"
         aria-label="닫기"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 cursor-pointer"
       />
 
       <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
@@ -135,7 +135,7 @@ function PickerTab({
         selected
           ? "border-brown-primary font-bold text-brown-primary"
           : "border-transparent text-zinc-500"
-      }`}
+      } cursor-pointer`}
     >
       {label}
     </button>
@@ -157,7 +157,7 @@ function ListRow({
       onClick={onClick}
       className={`w-full px-4 py-3 text-left text-[15px] ${
         selected ? "font-bold text-brown-primary" : "text-text-primary"
-      }`}
+      } cursor-pointer`}
     >
       {label}
     </button>

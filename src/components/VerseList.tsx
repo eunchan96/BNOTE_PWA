@@ -133,7 +133,7 @@ export default function VerseList({
                 onClick={() => toggleVerse(verse.verse)}
                 className={`block w-full text-left ${
                   isSelected ? "bg-brown-primary/10" : ""
-                }`}
+                } cursor-pointer`}
               >
                 {verse.title && (
                   <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
@@ -229,7 +229,7 @@ export default function VerseList({
                   type="button"
                   onClick={handleRemoveHighlight}
                   disabled={isPending}
-                  className="px-3 py-2 text-sm text-[#FF8A80]"
+                  className="px-3 py-2 text-sm text-[#FF8A80] cursor-pointer"
                 >
                   해제
                 </button>
@@ -242,7 +242,7 @@ export default function VerseList({
                 type="button"
                 onClick={() => handleHighlightColor(color)}
                 disabled={isPending}
-                className="h-6 w-6 shrink-0 rounded-full border border-white/20"
+                className="h-6 w-6 shrink-0 rounded-full border border-white/20 cursor-pointer"
                 style={{ backgroundColor: color }}
                 aria-label={color}
               />
@@ -268,7 +268,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-2 text-sm text-white disabled:opacity-50"
+      className="px-3 py-2 text-sm text-white disabled:opacity-50 cursor-pointer"
     >
       {label}
     </button>

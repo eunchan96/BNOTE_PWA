@@ -7,7 +7,7 @@ export default function SermonsPage() {
       <form action={signOut}>
         <button
           type="submit"
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 cursor-pointer"
         >
           로그아웃 (테스트용)
         </button>
