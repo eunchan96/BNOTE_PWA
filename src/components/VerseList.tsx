@@ -16,6 +16,7 @@ import {
 import { createScraps } from "@/lib/actions/scraps";
 import type { WordMemoRow } from "@/lib/actions/word-memos";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible";
+import { chapterUnit, getBook } from "@/lib/bible-books";
 import { HIGHLIGHT_PALETTE } from "@/lib/highlight-colors";
 import { Fragment, useEffect, useState, useTransition } from "react";
 
@@ -310,6 +311,31 @@ export default function VerseList({
     });
   }
 
+  function handleCopyVerses() {
+    const targets = verses
+      .filter((v) => selectedVerses.has(v.verse))
+      .sort((a, b) => a.verse - b.verse);
+    if (targets.length === 0) return;
+
+    const book = getBook(bookId);
+    const unit = chapterUnit(bookId);
+    const body = targets
+      .map((v) => `${v.verse}. ${v.text}${v.text2 ? " " + v.text2 : ""}`)
+      .join("\n");
+    const ref =
+      targets.length === 1
+        ? `${book?.name} ${chapter}${unit} ${targets[0].verse}절`
+        : `${book?.name} ${chapter}${unit} ${targets[0].verse}~${targets[targets.length - 1].verse}절`;
+
+    navigator.clipboard.writeText(`${body}\n(${ref})`);
+    clearSelection();
+  }
+
+  function handleMemorizePlaceholder() {
+    // 암송 그룹 선택 UI는 마이페이지의 암송 도메인 완성 후 연결합니다.
+    alert("암송 기능은 마이페이지 완성 후 이어서 연결할게요.");
+  }
+
   // 드래그로 선택한 부분에 하이라이트 (기존 것 안 지우고 추가)
   function handlePartialHighlightColor(colorHex: string) {
     if (!pendingSelection) return;
@@ -591,13 +617,34 @@ export default function VerseList({
               />
             )}
             <ToolbarButton
+              label="복사"
+              onClick={handleCopyVerses}
+              disabled={isPending}
+            />
+            <ToolbarButton
               label="하이라이트"
               onClick={() => setMode("colorPicker")}
               disabled={isPending}
             />
+            {selectedVerses.size === 1 && (
+              <ToolbarButton
+                label="메모"
+                onClick={() => {
+                  const v = [...selectedVerses][0];
+                  setMemoEditorVerse(v);
+                  clearSelection();
+                }}
+                disabled={isPending}
+              />
+            )}
             <ToolbarButton
               label="스크랩"
               onClick={() => setShowScrapPicker(true)}
+              disabled={isPending}
+            />
+            <ToolbarButton
+              label="암송"
+              onClick={handleMemorizePlaceholder}
               disabled={isPending}
             />
           </div>
@@ -652,9 +699,10 @@ export default function VerseList({
           bookId={bookId}
           chapter={chapter}
           verse={memoEditorVerse}
-          verseText={
-            verses.find((v) => v.verse === memoEditorVerse)?.text ?? ""
-          }
+          verseText={(() => {
+            const v = verses.find((v) => v.verse === memoEditorVerse);
+            return v ? (v.text2 ? `${v.text} ${v.text2}` : v.text) : "";
+          })()}
           onClose={() => setMemoEditorVerse(null)}
           onChanged={() =>
             setMemoVerses((prev) => new Set(prev).add(memoEditorVerse))

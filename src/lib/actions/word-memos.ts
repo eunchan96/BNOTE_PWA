@@ -154,7 +154,9 @@ export async function getAllWordMemos(): Promise<WordMemoListRow[]> {
     .eq("member_id", user.id)
     .order("book_id", { ascending: true })
     .order("chapter", { ascending: true })
-    .order("verse", { ascending: true });
+    .order("verse", { ascending: true })
+    .order("start_offset", { ascending: true })
+    .order("end_offset", { ascending: true });
 
   if (error) throw error;
 
