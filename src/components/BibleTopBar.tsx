@@ -1,6 +1,7 @@
 "use client";
 
 import BibleLocationPicker from "@/components/BibleLocationPicker";
+import BibleMenuDrawer from "@/components/BibleMenuDrawer";
 import TranslationPickerSheet from "@/components/TranslationPickerSheet";
 import Link from "next/link";
 import { useState } from "react";
@@ -19,6 +20,7 @@ export default function BibleTopBar({
   secondary?: string;
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center overflow-x-auto bg-brown-primary px-2">
@@ -62,9 +64,16 @@ export default function BibleTopBar({
           <path d="M17,3H7c-1.1,0 -2,0.9 -2,2v16l7,-3 7,3V5c0,-1.1 -0.9,-2 -2,-2z" />
         </svg>
       </Link>
-      <TopBarIconButton label="메뉴">
-        <path d="M3,18h18v-2H3v2zM3,13h18v-2H3v2zM3,6v2h18V6H3z" />
-      </TopBarIconButton>
+      <button
+        type="button"
+        onClick={() => setIsMenuOpen(true)}
+        aria-label="메뉴"
+        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-90"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
+          <path d="M3,18h18v-2H3v2zM3,13h18v-2H3v2zM3,6v2h18V6H3z" />
+        </svg>
+      </button>
 
       {isPickerOpen && (
         <TranslationPickerSheet
@@ -75,6 +84,8 @@ export default function BibleTopBar({
           onClose={() => setIsPickerOpen(false)}
         />
       )}
+
+      {isMenuOpen && <BibleMenuDrawer onClose={() => setIsMenuOpen(false)} />}
     </header>
   );
 }
