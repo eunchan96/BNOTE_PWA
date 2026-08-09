@@ -11,6 +11,23 @@ import { useState, useTransition } from "react";
 
 type Mode = "none" | "selection" | "colorPicker";
 
+const PSALMS_BOOK_PART: Record<number, string> = {
+  1: "제일권",
+  42: "제이권",
+  73: "제삼권",
+  90: "제사권",
+  107: "제오권",
+};
+
+function psalmsBookPartLabel(
+  bookId: number,
+  chapter: number,
+  verse: number,
+): string | null {
+  if (bookId !== 19 || verse !== 1) return null;
+  return PSALMS_BOOK_PART[chapter] ?? null;
+}
+
 export default function VerseList({
   bookId,
   chapter,
@@ -104,10 +121,14 @@ export default function VerseList({
     (v) => highlights[v] !== undefined,
   );
 
+  // 장의 최대 절 번호가 100 이상이면(시편 119편처럼) 번호 칸을 조금 더 넓힌다.
+  const maxVerse = verses.reduce((max, v) => Math.max(max, v.verse), 1);
+  const numberColumnWidth = maxVerse >= 100 ? "w-[26px]" : "w-[20px]";
+
   return (
     <>
       <ol className="flex flex-col">
-        {verses.map((verse) => {
+        {verses.map((verse, index) => {
           const colorHex = highlights[verse.verse];
           const isSelected = selectedVerses.has(verse.verse);
           const secondary = secondaryVerses?.find(
@@ -122,6 +143,17 @@ export default function VerseList({
                 : secondary.text
             : null;
 
+          const bookPartLabel = psalmsBookPartLabel(
+            bookId,
+            chapter,
+            verse.verse,
+          );
+
+          // 장이 소제목·권 표시 없이 1절부터 바로 시작하면 맨 위 여백을 더 준다.
+          const isFirstVerse = index === 0;
+          const extraTopSpacing =
+            isFirstVerse && !verse.title && !bookPartLabel;
+
           return (
             <li
               key={verse.verse}
@@ -131,18 +163,30 @@ export default function VerseList({
               <button
                 type="button"
                 onClick={() => toggleVerse(verse.verse)}
-                className={`block w-full text-left ${
+                className={`block w-full cursor-pointer text-left ${
                   isSelected ? "bg-brown-primary/10" : ""
-                } cursor-pointer`}
+                }`}
               >
-                {verse.title && (
-                  <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
-                    {verse.title}
+                {bookPartLabel && (
+                  <p className="px-3 pt-3.5 pb-0 text-sm font-bold text-brown-dark">
+                    [{bookPartLabel}]
                   </p>
                 )}
 
-                <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                  <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
+                {verse.title && (
+                  <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
+                    &lt;{verse.title}&gt;
+                  </p>
+                )}
+
+                <div
+                  className={`flex gap-1 py-1 pb-2 pl-1.5 pr-3 ${
+                    extraTopSpacing ? "pt-3" : "pt-1"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 ${numberColumnWidth} shrink-0 text-center font-bold text-text-secondary`}
+                  >
                     {verse.verse}
                   </span>
                   <div className="flex-1">
@@ -166,10 +210,10 @@ export default function VerseList({
                 {verse.title2 && (
                   <>
                     <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
-                      {verse.title2}
+                      &lt;{verse.title2}&gt;
                     </p>
                     <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                      <span className="w-[26px] shrink-0" />
+                      <span className={`${numberColumnWidth} shrink-0`} />
                       <div className="flex-1">
                         <p className="text-base leading-relaxed text-text-primary">
                           <span
@@ -196,6 +240,9 @@ export default function VerseList({
           );
         })}
       </ol>
+
+      {/* 장 끝 여백 (안드로이드는 화면 높이의 30%, 나중에 "읽음 표시" 버튼이 여기 들어갈 자리) */}
+      <div className="h-[30vh]" />
 
       {mode === "selection" && (
         <div className="fixed inset-x-0 bottom-[60px] z-10 flex justify-center">
@@ -229,7 +276,7 @@ export default function VerseList({
                   type="button"
                   onClick={handleRemoveHighlight}
                   disabled={isPending}
-                  className="px-3 py-2 text-sm text-[#FF8A80] cursor-pointer"
+                  className="cursor-pointer px-3 py-2 text-sm text-[#FF8A80]"
                 >
                   해제
                 </button>
@@ -242,7 +289,7 @@ export default function VerseList({
                 type="button"
                 onClick={() => handleHighlightColor(color)}
                 disabled={isPending}
-                className="h-6 w-6 shrink-0 rounded-full border border-white/20 cursor-pointer"
+                className="h-6 w-6 shrink-0 cursor-pointer rounded-full border border-white/20"
                 style={{ backgroundColor: color }}
                 aria-label={color}
               />
@@ -268,7 +315,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="px-3 py-2 text-sm text-white disabled:opacity-50 cursor-pointer"
+      className="cursor-pointer px-3 py-2 text-sm text-white disabled:cursor-default disabled:opacity-50"
     >
       {label}
     </button>
