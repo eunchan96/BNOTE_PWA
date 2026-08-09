@@ -1,17 +1,7 @@
-import { signOut } from "@/lib/auth-actions";
+import SermonListClient from "@/components/SermonListClient";
+import { getSermons } from "@/lib/actions/sermons";
 
-export default function SermonsPage() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-      <p className="text-zinc-500">설교노트 화면 (준비 중)</p>
-      <form action={signOut}>
-        <button
-          type="submit"
-          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-700 cursor-pointer"
-        >
-          로그아웃 (테스트용)
-        </button>
-      </form>
-    </div>
-  );
+export default async function SermonsPage() {
+  const sermons = await getSermons();
+  return <SermonListClient sermons={sermons} />;
 }
