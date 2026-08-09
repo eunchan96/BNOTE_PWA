@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getChapterVerses } from "@/lib/bible";
+import { getBook } from "@/lib/bible-books";
+
 async function requireUser() {
   const supabase = await createClient();
   const {
@@ -130,4 +133,55 @@ export async function deleteWordMemo(id: number, bookId: number, chapter: number
   if (error) throw error;
 
   revalidatePath(`/bible/${bookId}/${chapter}`);
+}
+
+export type WordMemoListRow = {
+  id: number;
+  bookId: number;
+  bookName: string;
+  chapter: number;
+  verse: number;
+  word: string;
+  text: string;
+};
+
+export async function getAllWordMemos(): Promise<WordMemoListRow[]> {
+  const { supabase, user } = await requireUser();
+
+  const { data, error } = await supabase
+    .from("word_memo")
+    .select("id, translation, book_id, chapter, verse, segment, start_offset, end_offset, text")
+    .eq("member_id", user.id)
+    .order("book_id", { ascending: true })
+    .order("chapter", { ascending: true })
+    .order("verse", { ascending: true });
+
+  if (error) throw error;
+
+  const rows: WordMemoListRow[] = [];
+  const cache = new Map<string, Awaited<ReturnType<typeof getChapterVerses>>>();
+
+  for (const r of data ?? []) {
+    const cacheKey = `${r.translation}-${r.book_id}-${r.chapter}`;
+    let verses = cache.get(cacheKey);
+    if (!verses) {
+      verses = await getChapterVerses(r.book_id, r.chapter, r.translation);
+      cache.set(cacheKey, verses);
+    }
+    const verseData = verses.find((v) => v.verse === r.verse);
+    const fullText = r.segment === 1 ? (verseData?.text2 ?? "") : (verseData?.text ?? "");
+    const word = fullText.slice(r.start_offset, r.end_offset);
+
+    rows.push({
+      id: r.id,
+      bookId: r.book_id,
+      bookName: getBook(r.book_id)?.name ?? "",
+      chapter: r.chapter,
+      verse: r.verse,
+      word,
+      text: r.text,
+    });
+  }
+
+  return rows;
 }

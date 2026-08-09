@@ -2,7 +2,9 @@
 
 import ScrapGroupPickerSheet from "@/components/ScrapGroupPickerSheet";
 import VerseMemoEditorSheet from "@/components/VerseMemoEditorSheet";
-import WordMemoSheet from "@/components/WordMemoSheet";
+import WordMemoSheet, {
+  type WordMemoBoxInput,
+} from "@/components/WordMemoSheet";
 import { toggleBookmark } from "@/lib/actions/bible-actions";
 import {
   applyPartialHighlight,
@@ -42,37 +44,68 @@ function psalmsBookPartLabel(
 }
 
 /** 문자 단위로 색을 입혀서, 겹치는 하이라이트는 나중 것(id가 큰 것)이 위에 칠해지게 만든다. */
-function renderColoredText(text: string, ranges: HighlightRange[]) {
-  if (ranges.length === 0) return text;
+function contrastTextColor(colorHex: string): string {
+  const hex = colorHex.replace("#", "");
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? "#212121" : "#F5F5F5";
+}
+
+function renderColoredText(
+  text: string,
+  highlightRanges: HighlightRange[],
+  memoRanges: { start: number; end: number }[],
+) {
+  if (highlightRanges.length === 0 && memoRanges.length === 0) return text;
 
   const colors: (string | null)[] = new Array(text.length).fill(null);
-  for (const r of [...ranges].sort((a, b) => a.id - b.id)) {
-    for (let i = r.start; i < Math.min(r.end, text.length); i++) {
+  for (const r of [...highlightRanges].sort((a, b) => a.id - b.id)) {
+    for (let i = r.start; i < Math.min(r.end, text.length); i++)
       colors[i] = r.colorHex;
-    }
+  }
+  const underline: boolean[] = new Array(text.length).fill(false);
+  for (const m of memoRanges) {
+    for (let i = m.start; i < Math.min(m.end, text.length); i++)
+      underline[i] = true;
   }
 
-  const chunks: { text: string; color: string | null }[] = [];
+  const chunks: { text: string; color: string | null; underline: boolean }[] =
+    [];
   let start = 0;
-  let current = colors[0] ?? null;
+  let currentColor = colors[0] ?? null;
+  let currentUnderline = underline[0] ?? false;
   for (let i = 1; i <= text.length; i++) {
-    const c = i < text.length ? colors[i] : "__end__";
-    if (c !== current) {
-      chunks.push({ text: text.slice(start, i), color: current });
+    const c = i < text.length ? colors[i] : null;
+    const u = i < text.length ? underline[i] : false;
+    if (c !== currentColor || u !== currentUnderline) {
+      chunks.push({
+        text: text.slice(start, i),
+        color: currentColor,
+        underline: currentUnderline,
+      });
       start = i;
-      current = i < text.length ? colors[i] : null;
+      currentColor = c;
+      currentUnderline = u;
     }
   }
 
-  return chunks.map((chunk, i) =>
-    chunk.color ? (
-      <span key={i} style={{ backgroundColor: chunk.color }}>
+  return chunks.map((chunk, i) => {
+    if (!chunk.color && !chunk.underline)
+      return <Fragment key={i}>{chunk.text}</Fragment>;
+    const style: React.CSSProperties = {};
+    if (chunk.color) {
+      style.backgroundColor = chunk.color;
+      style.color = contrastTextColor(chunk.color);
+    }
+    if (chunk.underline) style.textDecoration = "underline";
+    return (
+      <span key={i} style={style}>
         {chunk.text}
       </span>
-    ) : (
-      <Fragment key={i}>{chunk.text}</Fragment>
-    ),
-  );
+    );
+  });
 }
 
 type PendingSelection = {
@@ -112,10 +145,7 @@ export default function VerseList({
   const [wordMemoSheet, setWordMemoSheet] = useState<{
     verse: number;
     segment: number;
-    start: number;
-    end: number;
-    selectedText: string;
-    existing: WordMemoRow | null;
+    boxes: WordMemoBoxInput[];
   } | null>(null);
   const [showScrapPicker, setShowScrapPicker] = useState(false);
   const [memoVerses, setMemoVerses] = useState<Set<number>>(
@@ -310,28 +340,35 @@ export default function VerseList({
     if (!pendingSelection) return;
     const { verse, segment, start, end } = pendingSelection;
 
-    const overlapping = wordMemos.find(
+    const verseData = verses.find((v) => v.verse === verse);
+    const fullText =
+      segment === 1 ? (verseData?.text2 ?? "") : (verseData?.text ?? "");
+
+    const overlapping = wordMemos.filter(
       (m) =>
         m.verse === verse &&
         m.segment === segment &&
         !(end <= m.startOffset || start >= m.endOffset),
     );
 
-    const verseData = verses.find((v) => v.verse === verse);
-    const fullText =
-      segment === 1 ? (verseData?.text2 ?? "") : (verseData?.text ?? "");
-    const selectedText = overlapping
-      ? fullText.slice(overlapping.startOffset, overlapping.endOffset)
-      : fullText.slice(start, end);
+    const boxes: WordMemoBoxInput[] = [
+      {
+        id: null,
+        start,
+        end,
+        selectedText: fullText.slice(start, end),
+        text: "",
+      },
+      ...overlapping.map((m) => ({
+        id: m.id,
+        start: m.startOffset,
+        end: m.endOffset,
+        selectedText: fullText.slice(m.startOffset, m.endOffset),
+        text: m.text,
+      })),
+    ];
 
-    setWordMemoSheet({
-      verse,
-      segment,
-      start: overlapping?.startOffset ?? start,
-      end: overlapping?.endOffset ?? end,
-      selectedText,
-      existing: overlapping ?? null,
-    });
+    setWordMemoSheet({ verse, segment, boxes });
     setPendingSelection(null);
     clearBrowserSelection();
     setMode("none");
@@ -453,6 +490,14 @@ export default function VerseList({
                       {renderColoredText(
                         verse.text,
                         highlightRanges[`${verse.verse}-0`] ?? [],
+                        wordMemos
+                          .filter(
+                            (m) => m.verse === verse.verse && m.segment === 0,
+                          )
+                          .map((m) => ({
+                            start: m.startOffset,
+                            end: m.endOffset,
+                          })),
                       )}
                     </p>
                     {secondaryFirstLine && (
@@ -480,6 +525,15 @@ export default function VerseList({
                           {renderColoredText(
                             verse.text2 ?? "",
                             highlightRanges[`${verse.verse}-1`] ?? [],
+                            wordMemos
+                              .filter(
+                                (m) =>
+                                  m.verse === verse.verse && m.segment === 1,
+                              )
+                              .map((m) => ({
+                                start: m.startOffset,
+                                end: m.endOffset,
+                              })),
                           )}
                         </p>
                         {secondary?.text2 && (
@@ -590,16 +644,13 @@ export default function VerseList({
           verse={wordMemoSheet.verse}
           translation={translation}
           segment={wordMemoSheet.segment}
-          start={wordMemoSheet.start}
-          end={wordMemoSheet.end}
-          selectedText={wordMemoSheet.selectedText}
-          existing={wordMemoSheet.existing}
+          initialBoxes={wordMemoSheet.boxes}
           onClose={() => setWordMemoSheet(null)}
           onSaved={(memo) => {
-            setWordMemos((prev) => {
-              const withoutOld = prev.filter((m) => m.id !== memo.id);
-              return [...withoutOld, memo];
-            });
+            setWordMemos((prev) => [
+              ...prev.filter((m) => m.id !== memo.id),
+              memo,
+            ]);
           }}
           onDeleted={(id) => {
             setWordMemos((prev) => prev.filter((m) => m.id !== id));
