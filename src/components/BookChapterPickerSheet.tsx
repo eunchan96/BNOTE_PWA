@@ -1,5 +1,6 @@
 "use client";
 
+import { getVerseNumbers } from "@/lib/actions/bible-queries";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible-books";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,11 +55,8 @@ export default function BookChapterPickerSheet({
     setSelectedChapter(chapter);
     setStep("verse");
     setLoadingVerses(true);
-    fetch(`/api/bible/${selectedBookId}/${chapter}?translation=${translation}`)
-      .then((res) => res.json())
-      .then((data: { verses: { verse: number }[] }) => {
-        setVerseNumbers(data.verses.map((v) => v.verse));
-      })
+    getVerseNumbers(selectedBookId, chapter, translation)
+      .then((numbers) => setVerseNumbers(numbers))
       .finally(() => setLoadingVerses(false));
   }
 
