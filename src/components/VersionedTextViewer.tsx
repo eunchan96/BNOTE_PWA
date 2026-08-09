@@ -14,7 +14,7 @@ export default function VersionedTextViewer({
 
   return (
     <div className="flex flex-1 flex-col bg-surface-background">
-      <header className="flex h-14 items-center gap-1 bg-brown-primary pl-1">
+      <header className="sticky top-0 z-10 flex h-14 items-center gap-1 bg-brown-primary pl-1">
         <BackButton />
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">
           {content.title}

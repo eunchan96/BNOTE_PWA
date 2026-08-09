@@ -97,14 +97,13 @@ export default function BibleSearchPage() {
   const translation = searchParams.get("translation") ?? "NKRV";
 
   const [keyword, setKeyword] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>(() => getSearchHistory());
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [emptyMessage, setEmptyMessage] = useState("검색어를 입력해주세요");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setHistory(getSearchHistory());
     inputRef.current?.focus();
   }, []);
 
@@ -113,26 +112,29 @@ export default function BibleSearchPage() {
 
     const normalizedLength = keyword.replace(/\s/g, "").length;
 
-    if (keyword === "") {
-      setResults(null);
-      setHistory(getSearchHistory());
-      return;
-    }
+    debounceRef.current = setTimeout(
+      async () => {
+        if (keyword === "") {
+          setResults(null);
+          setHistory(getSearchHistory());
+          return;
+        }
 
-    if (normalizedLength < 2) {
-      setResults(null);
-      setEmptyMessage("2글자 이상 입력해주세요");
-      return;
-    }
+        if (normalizedLength < 2) {
+          setResults(null);
+          setEmptyMessage("2글자 이상 입력해주세요");
+          return;
+        }
 
-    debounceRef.current = setTimeout(async () => {
-      const res = await fetch(
-        `/api/bible/search?translation=${translation}&keyword=${encodeURIComponent(keyword.trim())}`,
-      );
-      const data: { results: SearchResult[] } = await res.json();
-      setResults(data.results);
-      setEmptyMessage("검색 결과가 없어요");
-    }, 300);
+        const res = await fetch(
+          `/api/bible/search?translation=${translation}&keyword=${encodeURIComponent(keyword.trim())}`,
+        );
+        const data: { results: SearchResult[] } = await res.json();
+        setResults(data.results);
+        setEmptyMessage("검색 결과가 없어요");
+      },
+      keyword === "" ? 0 : 300,
+    );
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -160,7 +162,7 @@ export default function BibleSearchPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-surface-background">
-      <header className="flex h-14 items-center gap-1 bg-brown-primary pl-1">
+      <header className="sticky top-0 z-10 flex h-14 items-center gap-1 bg-brown-primary pl-1">
         <button
           type="button"
           onClick={() => router.back()}
