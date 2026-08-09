@@ -1,5 +1,6 @@
 "use client";
 
+import BibleRangePickerSheet from "@/components/sermon/BibleRangePickerSheet";
 import NamePickerSheet from "@/components/sermon/NamePickerSheet";
 import {
   createPreacher,
@@ -10,7 +11,7 @@ import {
   type PreacherRow,
   type SermonDetail,
 } from "@/lib/actions/sermon/sermons";
-import { BIBLE_BOOKS } from "@/lib/bible/bible-books";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -44,31 +45,34 @@ export default function SermonFormClient({
   const [preacherList, setPreacherList] = useState(preachers);
   const [showPreacherPicker, setShowPreacherPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [rangePicker, setRangePicker] = useState<{
+    index: number | null;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  function addRef() {
-    setRefs((prev) => [
-      ...prev,
-      {
-        startBookId: 1,
-        startChapter: 1,
-        startVerse: 1,
-        endBookId: 1,
-        endChapter: 1,
-        endVerse: 1,
-      },
-    ]);
+  function refLabel(ref: BibleRefInput) {
+    const book = getBook(ref.startBookId);
+    const unit = chapterUnit(ref.startBookId);
+    if (ref.startVerse === ref.endVerse) {
+      return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}절`;
+    }
+    return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}~${ref.endVerse}절`;
   }
 
-  function updateRef(index: number, patch: Partial<BibleRefInput>) {
-    setRefs((prev) =>
-      prev.map((r, i) => (i === index ? { ...r, ...patch } : r)),
-    );
+  function handleRangeSelected(ref: BibleRefInput) {
+    if (rangePicker?.index === null || rangePicker?.index === undefined) {
+      setRefs((prev) => [...prev, ref]);
+    } else {
+      setRefs((prev) =>
+        prev.map((r, i) => (i === rangePicker.index ? ref : r)),
+      );
+    }
   }
 
-  function removeRef(index: number) {
-    setRefs((prev) => prev.filter((_, i) => i !== index));
+  function handleRangeDelete() {
+    if (rangePicker?.index === null || rangePicker?.index === undefined) return;
+    setRefs((prev) => prev.filter((_, i) => i !== rangePicker.index));
   }
 
   async function handlePhotoUpload(files: FileList | null) {
@@ -136,152 +140,122 @@ export default function SermonFormClient({
         <button
           type="button"
           onClick={() => router.back()}
-          aria-label="닫기"
+          aria-label="뒤로가기"
           className="flex h-10 w-10 cursor-pointer items-center justify-center"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
-            <path d="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z" />
           </svg>
         </button>
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">
           {existing ? "설교 수정" : "설교 작성"}
         </h1>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="mr-3 cursor-pointer text-sm font-medium text-white disabled:opacity-60"
-        >
-          {isSaving ? "저장 중..." : "저장"}
-        </button>
-      </header>
-
-      <div className="flex flex-col gap-4 p-4">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="제목"
-          className="rounded-lg border border-divider p-3 text-base"
-        />
-
         <input
           type="date"
           value={sermonDate}
           onChange={(e) => setSermonDate(e.target.value)}
-          className="rounded-lg border border-divider p-3 text-base"
+          className="mr-2 cursor-pointer bg-transparent text-[15px] text-white [color-scheme:dark]"
         />
+      </header>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowPreacherPicker(true)}
-            className="flex-1 cursor-pointer rounded-lg border border-divider p-3 text-left text-[15px] text-text-primary"
-          >
-            {selectedPreacherName}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCategoryPicker(true)}
-            className="flex-1 cursor-pointer rounded-lg border border-divider p-3 text-left text-[15px] text-text-primary"
-          >
-            {selectedCategory ? selectedCategory.name : "카테고리 선택"}
-          </button>
-        </div>
+      <div className="flex flex-col p-4">
+        <FormRow label="제목">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="제목"
+            className="w-full rounded-lg border border-divider px-3 py-2 text-[15px]"
+          />
+        </FormRow>
 
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-bold text-text-secondary">본문 구절</p>
-            <button
-              type="button"
-              onClick={addRef}
-              className="cursor-pointer text-sm text-brown-primary"
-            >
-              + 구절 추가
-            </button>
-          </div>
-          {refs.map((ref, index) => (
-            <div
-              key={index}
-              className="mb-2 flex items-center gap-1.5 rounded-lg border border-divider p-2"
-            >
-              <select
-                value={ref.startBookId}
-                onChange={(e) => {
-                  const bookId = Number(e.target.value);
-                  updateRef(index, { startBookId: bookId, endBookId: bookId });
-                }}
-                className="rounded border border-divider p-1.5 text-sm"
-              >
-                {BIBLE_BOOKS.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={ref.startChapter}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  updateRef(index, { startChapter: v, endChapter: v });
-                }}
-                className="w-14 rounded border border-divider p-1.5 text-sm"
-                placeholder="장"
-              />
-              <input
-                type="number"
-                value={ref.startVerse}
-                onChange={(e) =>
-                  updateRef(index, { startVerse: Number(e.target.value) })
-                }
-                className="w-14 rounded border border-divider p-1.5 text-sm"
-                placeholder="시작절"
-              />
-              <span className="text-zinc-400">~</span>
-              <input
-                type="number"
-                value={ref.endVerse}
-                onChange={(e) =>
-                  updateRef(index, { endVerse: Number(e.target.value) })
-                }
-                className="w-14 rounded border border-divider p-1.5 text-sm"
-                placeholder="끝절"
-              />
+        <FormRow label="본문" className="mt-2">
+          <div className="flex flex-wrap gap-1.5">
+            {refs.length === 0 ? (
               <button
                 type="button"
-                onClick={() => removeRef(index)}
-                aria-label="삭제"
-                className="ml-auto cursor-pointer text-zinc-400"
+                onClick={() => setRangePicker({ index: null })}
+                className="w-full cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-zinc-400"
               >
-                ✕
+                본문 선택
               </button>
-            </div>
-          ))}
-        </div>
+            ) : (
+              <>
+                {refs.map((ref, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setRangePicker({ index })}
+                    className="cursor-pointer rounded-lg border border-divider px-3 py-2 text-[15px] text-text-primary"
+                  >
+                    {refLabel(ref)}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setRangePicker({ index: null })}
+                  aria-label="본문 추가"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border border-divider text-zinc-400"
+                >
+                  +
+                </button>
+              </>
+            )}
+          </div>
+        </FormRow>
+
+        <FormRow label="설교" className="mt-1">
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowPreacherPicker(true)}
+              className="flex-1 cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-text-primary"
+            >
+              {selectedPreacherName}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCategoryPicker(true)}
+              className="flex-1 cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-text-primary"
+            >
+              {selectedCategory ? selectedCategory.name : "카테고리 선택"}
+            </button>
+          </div>
+        </FormRow>
 
         <textarea
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          placeholder="설교 메모"
-          className="min-h-[160px] rounded-lg border border-divider p-3 text-[15px]"
+          placeholder="메모"
+          className="mt-3 min-h-[300px] rounded-lg border border-divider p-3 text-base"
         />
 
-        <input
-          type="text"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          placeholder="관련 링크 (선택)"
-          className="rounded-lg border border-divider p-3 text-base"
-        />
+        <div className="mt-3 flex gap-1.5">
+          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-divider px-3 py-3 text-[15px] text-text-primary">
+            {isUploading
+              ? "업로드 중..."
+              : `+ 사진 추가 (${photoUrls.length}/5)`}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handlePhotoUpload(e.target.files)}
+              className="hidden"
+            />
+          </label>
+          <input
+            type="text"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="링크 추가 (선택)"
+            className="flex-1 rounded-lg border border-divider px-3 py-3 text-[15px]"
+          />
+        </div>
 
-        <div>
-          <p className="mb-2 text-sm font-bold text-text-secondary">
-            사진 ({photoUrls.length}/5)
-          </p>
-          <div className="flex flex-wrap gap-2">
+        {photoUrls.length > 0 && (
+          <div className="mt-3 flex gap-2 overflow-x-auto">
             {photoUrls.map((url, index) => (
-              <div key={url} className="relative h-20 w-20">
+              <div key={url} className="relative h-20 w-20 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
@@ -298,20 +272,17 @@ export default function SermonFormClient({
                 </button>
               </div>
             ))}
-            {photoUrls.length < 5 && (
-              <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border border-dashed border-divider text-zinc-400">
-                {isUploading ? "..." : "+"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handlePhotoUpload(e.target.files)}
-                  className="hidden"
-                />
-              </label>
-            )}
           </div>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSaving}
+          className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] font-medium text-white disabled:opacity-60"
+        >
+          {isSaving ? "저장 중..." : "저장"}
+        </button>
       </div>
 
       {showPreacherPicker && (
@@ -341,6 +312,34 @@ export default function SermonFormClient({
           onClose={() => setShowCategoryPicker(false)}
         />
       )}
+
+      {rangePicker && (
+        <BibleRangePickerSheet
+          existing={rangePicker.index !== null ? refs[rangePicker.index] : null}
+          onSelect={handleRangeSelected}
+          onDelete={rangePicker.index !== null ? handleRangeDelete : undefined}
+          onClose={() => setRangePicker(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function FormRow({
+  label,
+  className = "",
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex items-start gap-2 ${className}`}>
+      <span className="mt-2 w-11 shrink-0 text-[15px] text-text-secondary">
+        {label}
+      </span>
+      <div className="flex-1">{children}</div>
     </div>
   );
 }

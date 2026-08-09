@@ -1,7 +1,7 @@
-import SermonListClient from "@/components/sermon/SermonListClient";
+import SermonTabsClient from "@/components/sermon/SermonTabsClient";
 import { getSermons } from "@/lib/actions/sermon/sermons";
 
 export default async function SermonsPage() {
   const sermons = await getSermons();
-  return <SermonListClient sermons={sermons} />;
+  return <SermonTabsClient sermons={sermons} />;
 }

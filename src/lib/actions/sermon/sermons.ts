@@ -73,6 +73,7 @@ export type SermonListRow = {
   sermonDate: string;
   colorHex: string | null;
   refLabel: string;
+  firstBookId: number | null;
 };
 
 export async function getSermons(): Promise<SermonListRow[]> {
@@ -91,15 +92,15 @@ export async function getSermons(): Promise<SermonListRow[]> {
   const { getBook, chapterUnit } = await import("@/lib/bible/bible-books");
 
   return (data ?? []).map((s) => {
-    const refs = (s.sermon_bible_ref ?? []) as BibleRefInput[];
+    const refs = s.sermon_bible_ref ?? [];
     const refLabel = refs
       .map((r) => {
-        const book = getBook(r.startBookId);
-        const unit = chapterUnit(r.startBookId);
-        if (r.startVerse === r.endVerse && r.startChapter === r.endChapter) {
-          return `${book?.name} ${r.startChapter}${unit} ${r.startVerse}절`;
+        const book = getBook(r.start_book_id);
+        const unit = chapterUnit(r.start_book_id);
+        if (r.start_verse === r.end_verse && r.start_chapter === r.end_chapter) {
+          return `${book?.name} ${r.start_chapter}${unit} ${r.start_verse}절`;
         }
-        return `${book?.name} ${r.startChapter}${unit} ${r.startVerse}~${r.endVerse}절`;
+        return `${book?.name} ${r.start_chapter}${unit} ${r.start_verse}~${r.end_verse}절`;
       })
       .join(", ");
 
@@ -111,6 +112,7 @@ export async function getSermons(): Promise<SermonListRow[]> {
       sermonDate: s.sermon_date,
       colorHex: category?.color_hex ?? null,
       refLabel,
+      firstBookId: refs[0]?.start_book_id ?? null,
     };
   });
 }
