@@ -2,17 +2,27 @@
 
 import ScrapGroupPickerSheet from "@/components/ScrapGroupPickerSheet";
 import VerseMemoEditorSheet from "@/components/VerseMemoEditorSheet";
+import WordMemoSheet from "@/components/WordMemoSheet";
+import { toggleBookmark } from "@/lib/actions/bible-actions";
 import {
+  applyPartialHighlight,
   applyVerseHighlight,
   removeVerseHighlight,
-  toggleBookmark,
-} from "@/lib/actions/bible-actions";
+  type HighlightRange,
+  type HighlightRangeMap,
+} from "@/lib/actions/highlights";
 import { createScraps } from "@/lib/actions/scraps";
+import type { WordMemoRow } from "@/lib/actions/word-memos";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible";
-import { HIGHLIGHT_PALETTE } from "@/lib/highlights";
-import { useState, useTransition } from "react";
+import { HIGHLIGHT_PALETTE } from "@/lib/highlight-colors";
+import { Fragment, useEffect, useState, useTransition } from "react";
 
-type Mode = "none" | "selection" | "colorPicker";
+type Mode =
+  | "none"
+  | "selection"
+  | "colorPicker"
+  | "textSelection"
+  | "textColorPicker";
 
 const PSALMS_BOOK_PART: Record<number, string> = {
   1: "제일권",
@@ -31,13 +41,55 @@ function psalmsBookPartLabel(
   return PSALMS_BOOK_PART[chapter] ?? null;
 }
 
+/** 문자 단위로 색을 입혀서, 겹치는 하이라이트는 나중 것(id가 큰 것)이 위에 칠해지게 만든다. */
+function renderColoredText(text: string, ranges: HighlightRange[]) {
+  if (ranges.length === 0) return text;
+
+  const colors: (string | null)[] = new Array(text.length).fill(null);
+  for (const r of [...ranges].sort((a, b) => a.id - b.id)) {
+    for (let i = r.start; i < Math.min(r.end, text.length); i++) {
+      colors[i] = r.colorHex;
+    }
+  }
+
+  const chunks: { text: string; color: string | null }[] = [];
+  let start = 0;
+  let current = colors[0] ?? null;
+  for (let i = 1; i <= text.length; i++) {
+    const c = i < text.length ? colors[i] : "__end__";
+    if (c !== current) {
+      chunks.push({ text: text.slice(start, i), color: current });
+      start = i;
+      current = i < text.length ? colors[i] : null;
+    }
+  }
+
+  return chunks.map((chunk, i) =>
+    chunk.color ? (
+      <span key={i} style={{ backgroundColor: chunk.color }}>
+        {chunk.text}
+      </span>
+    ) : (
+      <Fragment key={i}>{chunk.text}</Fragment>
+    ),
+  );
+}
+
+type PendingSelection = {
+  verse: number;
+  segment: number;
+  start: number;
+  end: number;
+};
+
 export default function VerseList({
   bookId,
   chapter,
   translation,
   verses,
   secondaryVerses,
-  initialHighlights,
+  initialHighlightRanges,
+  initialWordMemos,
   initialMemoVerses,
 }: {
   bookId: number;
@@ -45,13 +97,26 @@ export default function VerseList({
   translation: string;
   verses: BibleVerseRow[];
   secondaryVerses: RawVerseRow[] | null;
-  initialHighlights: Record<number, string>;
+  initialHighlightRanges: HighlightRangeMap;
+  initialWordMemos: WordMemoRow[];
   initialMemoVerses: number[];
 }) {
-  const [highlights, setHighlights] =
-    useState<Record<number, string>>(initialHighlights);
+  const [highlightRanges, setHighlightRanges] = useState<HighlightRangeMap>(
+    initialHighlightRanges,
+  );
+  const [wordMemos, setWordMemos] = useState<WordMemoRow[]>(initialWordMemos);
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
   const [mode, setMode] = useState<Mode>("none");
+  const [pendingSelection, setPendingSelection] =
+    useState<PendingSelection | null>(null);
+  const [wordMemoSheet, setWordMemoSheet] = useState<{
+    verse: number;
+    segment: number;
+    start: number;
+    end: number;
+    selectedText: string;
+    existing: WordMemoRow | null;
+  } | null>(null);
   const [showScrapPicker, setShowScrapPicker] = useState(false);
   const [memoVerses, setMemoVerses] = useState<Set<number>>(
     new Set(initialMemoVerses),
@@ -59,22 +124,81 @@ export default function VerseList({
   const [memoEditorVerse, setMemoEditorVerse] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function toggleVerse(verse: number) {
-    setSelectedVerses((prev) => {
-      const next = new Set(prev);
-      if (next.has(verse)) {
-        next.delete(verse);
-      } else {
-        next.add(verse);
+  // 드래그로 텍스트를 선택하면(절 하나 안에서만) 하단 툴바를 "텍스트 선택" 모드로 바꾼다.
+  useEffect(() => {
+    function handleSelectionChange() {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        setPendingSelection(null);
+        if (mode === "textSelection") setMode("none");
+        return;
       }
 
-      if (next.size === 0) {
-        setMode("none");
-      } else {
-        setMode("selection");
+      const range = selection.getRangeAt(0);
+      const anchorNode = range.commonAncestorContainer;
+      const anchorEl =
+        anchorNode.nodeType === Node.TEXT_NODE
+          ? anchorNode.parentElement
+          : (anchorNode as Element);
+      const container = anchorEl?.closest(
+        "[data-highlight-container]",
+      ) as HTMLElement | null;
+
+      if (
+        !container ||
+        !container.contains(range.startContainer) ||
+        !container.contains(range.endContainer)
+      ) {
+        setPendingSelection(null);
+        if (mode === "textSelection") setMode("none");
+        return;
       }
+
+      const verse = Number(container.dataset.verse);
+      const segment = Number(container.dataset.segment);
+
+      const preRange = document.createRange();
+      preRange.selectNodeContents(container);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const end = start + range.toString().length;
+
+      if (start === end) {
+        setPendingSelection(null);
+        return;
+      }
+
+      setPendingSelection({ verse, segment, start, end });
+      setMode("textSelection");
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelectionChange);
+  }, [mode]);
+
+  function clearBrowserSelection() {
+    window.getSelection()?.removeAllRanges();
+  }
+
+  function toggleVerse(verse: number) {
+    // 텍스트 드래그 선택 중이면 절 전체 선택 토글은 무시한다.
+    if (window.getSelection()?.toString()) return;
+
+    setSelectedVerses((prev) => {
+      const next = new Set(prev);
+      if (next.has(verse)) next.delete(verse);
+      else next.add(verse);
+      setMode(next.size === 0 ? "none" : "selection");
       return next;
     });
+  }
+
+  function clearSelection() {
+    setSelectedVerses(new Set());
+    setPendingSelection(null);
+    clearBrowserSelection();
+    setMode("none");
   }
 
   function handleNumberClick(verseNum: number, e: React.MouseEvent) {
@@ -86,11 +210,6 @@ export default function VerseList({
     }
   }
 
-  function clearSelection() {
-    setSelectedVerses(new Set());
-    setMode("none");
-  }
-
   function handleBookmark() {
     if (selectedVerses.size !== 1) return;
     const verse = [...selectedVerses][0];
@@ -100,7 +219,8 @@ export default function VerseList({
     });
   }
 
-  function handleHighlightColor(colorHex: string) {
+  // 절 전체 하이라이트 (기존 방식 그대로: 다시 칠하면 그 절의 기존 하이라이트는 지워짐)
+  function handleWholeVerseHighlightColor(colorHex: string) {
     if (selectedVerses.size === 0) return;
     const targets = verses.filter((v) => selectedVerses.has(v.verse));
 
@@ -112,33 +232,110 @@ export default function VerseList({
         colorHex,
         targets.map((v) => ({ verse: v.verse, text: v.text, text2: v.text2 })),
       );
-      setHighlights((prev) => {
+      setHighlightRanges((prev) => {
         const next = { ...prev };
-        for (const v of targets) next[v.verse] = colorHex;
+        for (const v of targets) {
+          next[`${v.verse}-0`] = [
+            {
+              id: Date.now() + v.verse,
+              segment: 0,
+              start: 0,
+              end: v.text.length,
+              colorHex,
+            },
+          ];
+          if (v.text2) {
+            next[`${v.verse}-1`] = [
+              {
+                id: Date.now() + v.verse + 1,
+                segment: 1,
+                start: 0,
+                end: v.text2.length,
+                colorHex,
+              },
+            ];
+          }
+        }
         return next;
       });
       clearSelection();
     });
   }
 
-  function handleRemoveHighlight() {
+  function handleRemoveWholeVerseHighlight() {
     if (selectedVerses.size === 0) return;
     const verseNums = [...selectedVerses];
 
     startTransition(async () => {
       await removeVerseHighlight(bookId, chapter, verseNums, translation);
-      setHighlights((prev) => {
+      setHighlightRanges((prev) => {
         const next = { ...prev };
-        for (const v of verseNums) delete next[v];
+        for (const v of verseNums) {
+          delete next[`${v}-0`];
+          delete next[`${v}-1`];
+        }
         return next;
       });
       clearSelection();
     });
   }
 
-  const hasExistingHighlight = [...selectedVerses].some(
-    (v) => highlights[v] !== undefined,
-  );
+  // 드래그로 선택한 부분에 하이라이트 (기존 것 안 지우고 추가)
+  function handlePartialHighlightColor(colorHex: string) {
+    if (!pendingSelection) return;
+    const { verse, segment, start, end } = pendingSelection;
+
+    startTransition(async () => {
+      const range = await applyPartialHighlight(
+        bookId,
+        chapter,
+        verse,
+        translation,
+        segment,
+        start,
+        end,
+        colorHex,
+      );
+      setHighlightRanges((prev) => {
+        const key = `${verse}-${segment}`;
+        const next = { ...prev };
+        next[key] = [...(next[key] ?? []), range];
+        return next;
+      });
+      clearSelection();
+    });
+  }
+
+  function handleWordMemoAction() {
+    if (!pendingSelection) return;
+    const { verse, segment, start, end } = pendingSelection;
+
+    const overlapping = wordMemos.find(
+      (m) =>
+        m.verse === verse &&
+        m.segment === segment &&
+        !(end <= m.startOffset || start >= m.endOffset),
+    );
+
+    const verseData = verses.find((v) => v.verse === verse);
+    const fullText =
+      segment === 1 ? (verseData?.text2 ?? "") : (verseData?.text ?? "");
+    const selectedText = overlapping
+      ? fullText.slice(overlapping.startOffset, overlapping.endOffset)
+      : fullText.slice(start, end);
+
+    setWordMemoSheet({
+      verse,
+      segment,
+      start: overlapping?.startOffset ?? start,
+      end: overlapping?.endOffset ?? end,
+      selectedText,
+      existing: overlapping ?? null,
+    });
+    setPendingSelection(null);
+    clearBrowserSelection();
+    setMode("none");
+  }
 
   function handleScrapGroupSelected(groupId: number, groupName: string) {
     const targets = verses.filter((v) => selectedVerses.has(v.verse));
@@ -162,7 +359,10 @@ export default function VerseList({
     });
   }
 
-  // 장의 최대 절 번호가 100 이상이면(시편 119편처럼) 번호 칸을 조금 더 넓힌다.
+  const hasExistingWholeHighlight = [...selectedVerses].some(
+    (v) => highlightRanges[`${v}-0`]?.length,
+  );
+
   const maxVerse = verses.reduce((max, v) => Math.max(max, v.verse), 1);
   const numberColumnWidth = maxVerse >= 100 ? "w-[26px]" : "w-[20px]";
 
@@ -170,7 +370,6 @@ export default function VerseList({
     <>
       <ol className="flex flex-col">
         {verses.map((verse, index) => {
-          const colorHex = highlights[verse.verse];
           const isSelected = selectedVerses.has(verse.verse);
           const secondary = secondaryVerses?.find(
             (v) => v.verse === verse.verse,
@@ -189,8 +388,6 @@ export default function VerseList({
             chapter,
             verse.verse,
           );
-
-          // 장이 소제목·권 표시 없이 1절부터 바로 시작하면 맨 위 여백을 더 준다.
           const isFirstVerse = index === 0;
           const extraTopSpacing =
             isFirstVerse && !verse.title && !bookPartLabel;
@@ -237,14 +434,16 @@ export default function VerseList({
                     {verse.verse}
                   </button>
                   <div className="flex-1">
-                    <p className="text-base leading-relaxed text-text-primary">
-                      <span
-                        style={
-                          colorHex ? { backgroundColor: colorHex } : undefined
-                        }
-                      >
-                        {verse.text}
-                      </span>
+                    <p
+                      data-highlight-container
+                      data-verse={verse.verse}
+                      data-segment={0}
+                      className="select-text text-base leading-relaxed text-text-primary"
+                    >
+                      {renderColoredText(
+                        verse.text,
+                        highlightRanges[`${verse.verse}-0`] ?? [],
+                      )}
                     </p>
                     {secondaryFirstLine && (
                       <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
@@ -262,16 +461,16 @@ export default function VerseList({
                     <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
                       <span className={`${numberColumnWidth} shrink-0`} />
                       <div className="flex-1">
-                        <p className="text-base leading-relaxed text-text-primary">
-                          <span
-                            style={
-                              colorHex
-                                ? { backgroundColor: colorHex }
-                                : undefined
-                            }
-                          >
-                            {verse.text2}
-                          </span>
+                        <p
+                          data-highlight-container
+                          data-verse={verse.verse}
+                          data-segment={1}
+                          className="select-text text-base leading-relaxed text-text-primary"
+                        >
+                          {renderColoredText(
+                            verse.text2 ?? "",
+                            highlightRanges[`${verse.verse}-1`] ?? [],
+                          )}
                         </p>
                         {secondary?.text2 && (
                           <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
@@ -288,7 +487,6 @@ export default function VerseList({
         })}
       </ol>
 
-      {/* 장 끝 여백 (안드로이드는 화면 높이의 30%, 나중에 "읽음 표시" 버튼이 여기 들어갈 자리) */}
       <div className="h-[30vh]" />
 
       {mode === "selection" && (
@@ -297,22 +495,11 @@ export default function VerseList({
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
             {selectedVerses.size === 1 && (
-              <>
-                <ToolbarButton
-                  label="북마크"
-                  onClick={handleBookmark}
-                  disabled={isPending}
-                />
-                <ToolbarButton
-                  label="메모"
-                  onClick={() => {
-                    const verse = [...selectedVerses][0];
-                    setMemoEditorVerse(verse);
-                    clearSelection();
-                  }}
-                  disabled={isPending}
-                />
-              </>
+              <ToolbarButton
+                label="북마크"
+                onClick={handleBookmark}
+                disabled={isPending}
+              />
             )}
             <ToolbarButton
               label="하이라이트"
@@ -329,36 +516,38 @@ export default function VerseList({
       )}
 
       {mode === "colorPicker" && (
+        <ColorPickerBar
+          onCancel={clearSelection}
+          onPick={handleWholeVerseHighlightColor}
+          onRemove={
+            hasExistingWholeHighlight
+              ? handleRemoveWholeVerseHighlight
+              : undefined
+          }
+          disabled={isPending}
+        />
+      )}
+
+      {mode === "textSelection" && pendingSelection && (
         <div className="fixed inset-x-0 bottom-[60px] z-10 flex justify-center">
           <div className="flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
-            {hasExistingHighlight && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleRemoveHighlight}
-                  disabled={isPending}
-                  className="cursor-pointer px-3 py-2 text-sm text-[#FF8A80]"
-                >
-                  해제
-                </button>
-                <Divider />
-              </>
-            )}
-            {HIGHLIGHT_PALETTE.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => handleHighlightColor(color)}
-                disabled={isPending}
-                className="h-6 w-6 shrink-0 cursor-pointer rounded-full border border-white/20"
-                style={{ backgroundColor: color }}
-                aria-label={color}
-              />
-            ))}
+            <ToolbarButton
+              label="하이라이트"
+              onClick={() => setMode("textColorPicker")}
+            />
+            <ToolbarButton label="메모" onClick={handleWordMemoAction} />
           </div>
         </div>
+      )}
+
+      {mode === "textColorPicker" && (
+        <ColorPickerBar
+          onCancel={clearSelection}
+          onPick={handlePartialHighlightColor}
+          disabled={isPending}
+        />
       )}
 
       {showScrapPicker && (
@@ -382,7 +571,76 @@ export default function VerseList({
           }
         />
       )}
+
+      {wordMemoSheet && (
+        <WordMemoSheet
+          bookId={bookId}
+          chapter={chapter}
+          verse={wordMemoSheet.verse}
+          translation={translation}
+          segment={wordMemoSheet.segment}
+          start={wordMemoSheet.start}
+          end={wordMemoSheet.end}
+          selectedText={wordMemoSheet.selectedText}
+          existing={wordMemoSheet.existing}
+          onClose={() => setWordMemoSheet(null)}
+          onSaved={(memo) => {
+            setWordMemos((prev) => {
+              const withoutOld = prev.filter((m) => m.id !== memo.id);
+              return [...withoutOld, memo];
+            });
+          }}
+          onDeleted={(id) => {
+            setWordMemos((prev) => prev.filter((m) => m.id !== id));
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function ColorPickerBar({
+  onCancel,
+  onPick,
+  onRemove,
+  disabled,
+}: {
+  onCancel: () => void;
+  onPick: (color: string) => void;
+  onRemove?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-[60px] z-10 flex justify-center">
+      <div className="flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
+        <ToolbarButton label="✕" onClick={onCancel} />
+        <Divider />
+        {onRemove && (
+          <>
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={disabled}
+              className="cursor-pointer px-3 py-2 text-sm text-[#FF8A80]"
+            >
+              해제
+            </button>
+            <Divider />
+          </>
+        )}
+        {HIGHLIGHT_PALETTE.map((color) => (
+          <button
+            key={color}
+            type="button"
+            onClick={() => onPick(color)}
+            disabled={disabled}
+            className="h-6 w-6 shrink-0 cursor-pointer rounded-full border border-white/20"
+            style={{ backgroundColor: color }}
+            aria-label={color}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 

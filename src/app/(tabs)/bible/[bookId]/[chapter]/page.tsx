@@ -1,10 +1,11 @@
 import BibleTopBar from "@/components/BibleTopBar";
 import ScrollToVerse from "@/components/ScrollToVerse";
 import VerseList from "@/components/VerseList";
+import { getHighlightRangesForChapter } from "@/lib/actions/highlights";
 import { getMemoVerseNumbers } from "@/lib/actions/verse-memos";
+import { getWordMemosForChapter } from "@/lib/actions/word-memos";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
-import { getHighlightsForChapter } from "@/lib/highlights";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -61,9 +62,13 @@ export default async function BibleChapterPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const initialHighlights = user
-    ? await getHighlightsForChapter(supabase, translation, bookId, chapter)
+
+  const initialHighlightRanges = user
+    ? await getHighlightRangesForChapter(translation, bookId, chapter)
     : {};
+  const initialWordMemos = user
+    ? await getWordMemosForChapter(translation, bookId, chapter)
+    : [];
   const initialMemoVerses = user
     ? await getMemoVerseNumbers(bookId, chapter)
     : [];
@@ -86,7 +91,8 @@ export default async function BibleChapterPage({
           translation={translation}
           verses={verses}
           secondaryVerses={secondaryVerses}
-          initialHighlights={initialHighlights}
+          initialHighlightRanges={initialHighlightRanges}
+          initialWordMemos={initialWordMemos}
           initialMemoVerses={initialMemoVerses}
         />
       </div>

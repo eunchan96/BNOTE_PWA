@@ -8,7 +8,9 @@ export default async function HighlightBookDetailPage({
   params: Promise<{ bookId: string }>;
 }) {
   const { bookId } = await params;
-  const { bookName, chapterUnit, rows } = await getHighlightsForBook(Number(bookId));
+  const { bookName, chapterUnit, rows } = await getHighlightsForBook(
+    Number(bookId),
+  );
 
   const grouped = new Map<number, typeof rows>();
   for (const row of rows) {
