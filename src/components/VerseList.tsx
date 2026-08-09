@@ -131,11 +131,12 @@ export default function VerseList({
                 <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
                   {verse.verse}
                 </span>
-                <p
-                  className="flex-1 text-base leading-relaxed text-text-primary"
-                  style={colorHex ? { backgroundColor: colorHex } : undefined}
-                >
-                  {verse.text}
+                <p className="flex-1 text-base leading-relaxed text-text-primary">
+                  <span
+                    style={colorHex ? { backgroundColor: colorHex } : undefined}
+                  >
+                    {verse.text}
+                  </span>
                 </p>
               </button>
 
@@ -146,13 +147,14 @@ export default function VerseList({
                   </p>
                   <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
                     <span className="w-[26px] shrink-0" />
-                    <p
-                      className="flex-1 text-base leading-relaxed text-text-primary"
-                      style={
-                        colorHex ? { backgroundColor: colorHex } : undefined
-                      }
-                    >
-                      {verse.text2}
+                    <p className="flex-1 text-base leading-relaxed text-text-primary">
+                      <span
+                        style={
+                          colorHex ? { backgroundColor: colorHex } : undefined
+                        }
+                      >
+                        {verse.text2}
+                      </span>
                     </p>
                   </div>
                 </>
