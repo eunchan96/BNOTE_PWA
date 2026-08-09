@@ -60,6 +60,11 @@ export default function SermonFormClient({
     return `${book?.name} ${ref.startChapter}${unit} ${ref.startVerse}~${ref.endVerse}절`;
   }
 
+  function formatDateLabel(dateStr: string): string {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return `${y}년 ${m}월 ${d}일`;
+  }
+
   function handleRangeSelected(ref: BibleRefInput) {
     if (rangePicker?.index === null || rangePicker?.index === undefined) {
       setRefs((prev) => [...prev, ref]);
@@ -135,8 +140,8 @@ export default function SermonFormClient({
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
   return (
-    <div className="flex flex-1 flex-col bg-surface-background">
-      <header className="sticky top-0 z-10 flex h-14 items-center gap-1 bg-brown-primary pl-1">
+    <div className="flex h-[calc(100dvh-52px)] flex-col bg-surface-background">
+      <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center bg-brown-primary pl-1">
         <button
           type="button"
           onClick={() => router.back()}
@@ -150,32 +155,35 @@ export default function SermonFormClient({
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">
           {existing ? "설교 수정" : "설교 작성"}
         </h1>
-        <input
-          type="date"
-          value={sermonDate}
-          onChange={(e) => setSermonDate(e.target.value)}
-          className="mr-2 cursor-pointer bg-transparent text-[15px] text-white [color-scheme:dark]"
-        />
+        <label className="relative cursor-pointer px-3 py-3 text-[15px] text-white underline decoration-white/70 underline-offset-2">
+          {formatDateLabel(sermonDate)}
+          <input
+            type="date"
+            value={sermonDate}
+            onChange={(e) => setSermonDate(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </label>
       </header>
 
-      <div className="flex flex-col p-4">
+      <div className="flex flex-1 flex-col overflow-y-auto p-4">
         <FormRow label="제목">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목"
-            className="w-full rounded-lg border border-divider px-3 py-2 text-[15px]"
+            className="w-full rounded-lg bg-input-background px-3 py-2 text-[15px]"
           />
         </FormRow>
 
         <FormRow label="본문" className="mt-2">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1">
             {refs.length === 0 ? (
               <button
                 type="button"
                 onClick={() => setRangePicker({ index: null })}
-                className="w-full cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-zinc-400"
+                className="w-full cursor-pointer rounded-lg bg-input-background px-3 py-2 text-left text-[15px] text-zinc-400"
               >
                 본문 선택
               </button>
@@ -186,7 +194,7 @@ export default function SermonFormClient({
                     key={index}
                     type="button"
                     onClick={() => setRangePicker({ index })}
-                    className="cursor-pointer rounded-lg border border-divider px-3 py-2 text-[15px] text-text-primary"
+                    className="cursor-pointer rounded-lg bg-input-background px-3 py-2 text-[15px] text-text-primary"
                   >
                     {refLabel(ref)}
                   </button>
@@ -195,7 +203,7 @@ export default function SermonFormClient({
                   type="button"
                   onClick={() => setRangePicker({ index: null })}
                   aria-label="본문 추가"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border border-divider text-zinc-400"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg bg-input-background text-zinc-400"
                 >
                   +
                 </button>
@@ -204,34 +212,48 @@ export default function SermonFormClient({
           </div>
         </FormRow>
 
-        <FormRow label="설교" className="mt-1">
-          <div className="flex gap-1.5">
+        <FormRow label="설교" className="mt-2">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setShowPreacherPicker(true)}
-              className="flex-1 cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-text-primary"
+              className="flex-1 cursor-pointer truncate rounded-lg bg-input-background px-3 py-2 text-left text-[15px] text-text-primary"
             >
               {selectedPreacherName}
             </button>
             <button
               type="button"
               onClick={() => setShowCategoryPicker(true)}
-              className="flex-1 cursor-pointer rounded-lg border border-divider px-3 py-2 text-left text-[15px] text-text-primary"
+              className="flex-1 cursor-pointer truncate rounded-lg bg-input-background px-3 py-2 text-left text-[15px] text-text-primary"
             >
               {selectedCategory ? selectedCategory.name : "카테고리 선택"}
             </button>
           </div>
         </FormRow>
 
-        <textarea
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-          placeholder="메모"
-          className="mt-3 min-h-[300px] rounded-lg border border-divider p-3 text-base"
-        />
+        {/* 메모: 안드로이드 원본 그대로 넉넉한 높이 + 우하단 서식 도구 오버레이(현재는 스텁, 리치텍스트 미지원) */}
+        <div className="relative mt-3 flex flex-1 flex-col rounded-lg bg-input-background">
+          <textarea
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="메모"
+            className="min-h-[160px] flex-1 resize-none bg-transparent p-3 pb-11 text-base outline-none"
+          />
+          <div className="absolute bottom-1.5 right-1.5 flex overflow-hidden rounded-xl bg-white shadow-sm">
+            <span className="cursor-not-allowed px-2 py-2 text-[13px] text-text-secondary opacity-50">
+              굵게
+            </span>
+            <span className="cursor-not-allowed px-2 py-2 text-[13px] text-text-secondary opacity-50">
+              밑줄
+            </span>
+            <span className="cursor-not-allowed px-2 py-2 text-[13px] text-text-secondary opacity-50">
+              색
+            </span>
+          </div>
+        </div>
 
-        <div className="mt-3 flex gap-1.5">
-          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-divider px-3 py-3 text-[15px] text-text-primary">
+        <div className="mt-3 flex gap-1">
+          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-input-background px-3 py-3 text-[15px] text-text-primary">
             {isUploading
               ? "업로드 중..."
               : `+ 사진 추가 (${photoUrls.length}/5)`}
@@ -248,7 +270,7 @@ export default function SermonFormClient({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="링크 추가 (선택)"
-            className="flex-1 rounded-lg border border-divider px-3 py-3 text-[15px]"
+            className="flex-1 rounded-lg bg-input-background px-3 py-3 text-[15px]"
           />
         </div>
 
@@ -279,7 +301,7 @@ export default function SermonFormClient({
           type="button"
           onClick={handleSubmit}
           disabled={isSaving}
-          className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] font-medium text-white disabled:opacity-60"
+          className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] text-white disabled:opacity-60"
         >
           {isSaving ? "저장 중..." : "저장"}
         </button>
@@ -335,8 +357,8 @@ function FormRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-start gap-2 ${className}`}>
-      <span className="mt-2 w-11 shrink-0 text-[15px] text-text-secondary">
+    <div className={`flex items-center gap-2 ${className}`}>
+      <span className="w-11 shrink-0 text-[15px] text-text-secondary">
         {label}
       </span>
       <div className="flex-1">{children}</div>

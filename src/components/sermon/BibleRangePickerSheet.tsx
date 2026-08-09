@@ -1,7 +1,7 @@
 "use client";
 
-import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
 import type { BibleRefInput } from "@/lib/actions/sermon/sermons";
+import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -22,6 +22,7 @@ export default function BibleRangePickerSheet({
   const [bookId, setBookId] = useState(existing?.startBookId ?? -1);
   const [chapter, setChapter] = useState(existing?.startChapter ?? -1);
   const [startVerse, setStartVerse] = useState<number | null>(null);
+  const [isMultiMode, setIsMultiMode] = useState(true);
 
   const book = bookId !== -1 ? getBook(bookId) : undefined;
   const unit = bookId !== -1 ? chapterUnit(bookId) : "장";
@@ -39,13 +40,7 @@ export default function BibleRangePickerSheet({
     setStep("verse");
   }
 
-  function tapVerse(v: number) {
-    if (startVerse === null) {
-      setStartVerse(v);
-      return;
-    }
-    const start = Math.min(startVerse, v);
-    const end = Math.max(startVerse, v);
+  function finalize(start: number, end: number) {
     onSelect({
       startBookId: bookId,
       startChapter: chapter,
@@ -57,16 +52,16 @@ export default function BibleRangePickerSheet({
     onClose();
   }
 
-  function confirmSingle(v: number) {
-    onSelect({
-      startBookId: bookId,
-      startChapter: chapter,
-      startVerse: v,
-      endBookId: bookId,
-      endChapter: chapter,
-      endVerse: v,
-    });
-    onClose();
+  function tapVerse(v: number) {
+    if (!isMultiMode) {
+      finalize(v, v);
+      return;
+    }
+    if (startVerse === null) {
+      setStartVerse(v);
+      return;
+    }
+    finalize(Math.min(startVerse, v), Math.max(startVerse, v));
   }
 
   const title =
@@ -82,8 +77,8 @@ export default function BibleRangePickerSheet({
         onClick={onClose}
         className="absolute inset-0 cursor-pointer bg-black/40"
       />
-      <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
-        <div className="flex items-center px-4 pt-4 pb-2">
+      <div className="relative flex w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
+        <div className="flex items-center gap-1 px-4 pb-1 pt-4">
           <h2 className="flex-1 text-lg font-bold text-zinc-900">{title}</h2>
           {existing && onDelete && (
             <button
@@ -93,22 +88,50 @@ export default function BibleRangePickerSheet({
                 onClose();
               }}
               aria-label="삭제"
-              className="flex h-9 w-9 cursor-pointer items-center justify-center text-red-400"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center text-red-400"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6V19zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z" />
               </svg>
             </button>
           )}
         </div>
 
-        <p className="px-4 pb-2 text-xs text-text-secondary">
-          같은 장 안에서 시작 절과 끝 절을 순서대로 탭해주세요 (한 절만 쓰려면 같은 절을 두 번).
-          {startVerse !== null && ` 시작: ${startVerse}절 선택됨`}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-3 pb-1">
+          <label className="flex cursor-pointer items-center gap-1.5 px-1 py-1 text-sm text-text-secondary">
+            <input
+              type="checkbox"
+              checked={isMultiMode}
+              onChange={(e) => {
+                setIsMultiMode(e.target.checked);
+                setStartVerse(null);
+              }}
+            />
+            여러 구절 선택하기
+          </label>
+          <label className="flex cursor-not-allowed items-center gap-1.5 px-1 py-1 text-sm text-text-secondary opacity-40">
+            <input type="checkbox" disabled />
+            다음 장까지 선택하기
+          </label>
+        </div>
+        {startVerse !== null && (
+          <p className="px-4 pb-1 text-sm font-bold text-brown-primary">
+            {book?.name} {chapter}
+            {unit} {startVerse}절~
+          </p>
+        )}
 
         <div className="flex px-2">
-          <PickerTab label="성경" selected={step === "book"} onClick={() => setStep("book")} />
+          <PickerTab
+            label="성경"
+            selected={step === "book"}
+            onClick={() => setStep("book")}
+          />
           <PickerTab
             label="장"
             enabled={bookId !== -1}
@@ -124,7 +147,7 @@ export default function BibleRangePickerSheet({
         </div>
         <div className="border-t border-divider" />
 
-        <div className="h-[400px] overflow-y-auto p-2">
+        <div className="h-[420px] overflow-y-auto p-2">
           {step === "book" && (
             <div className="grid grid-cols-4 gap-2 p-1">
               {BIBLE_BOOKS.map((b) => (
@@ -133,7 +156,9 @@ export default function BibleRangePickerSheet({
                   type="button"
                   onClick={() => pickBook(b.id)}
                   className={`cursor-pointer rounded-lg px-1 py-3 text-center text-[13px] ${
-                    b.id === bookId ? "bg-brown-primary text-white" : "bg-zinc-100 text-zinc-800"
+                    b.id === bookId
+                      ? "bg-brown-primary text-white"
+                      : "bg-zinc-100 text-zinc-800"
                   }`}
                 >
                   {b.name}
@@ -144,18 +169,22 @@ export default function BibleRangePickerSheet({
 
           {step === "chapter" && book && (
             <div className="grid grid-cols-5 gap-2 p-1">
-              {Array.from({ length: book.chapterCount }, (_, i) => i + 1).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => pickChapter(c)}
-                  className={`flex h-11 cursor-pointer items-center justify-center rounded-lg text-sm ${
-                    c === chapter ? "bg-brown-primary text-white" : "bg-zinc-100 text-zinc-800"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
+              {Array.from({ length: book.chapterCount }, (_, i) => i + 1).map(
+                (c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => pickChapter(c)}
+                    className={`flex h-11 cursor-pointer items-center justify-center rounded-lg text-sm ${
+                      c === chapter
+                        ? "bg-brown-primary text-white"
+                        : "bg-zinc-100 text-zinc-800"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ),
+              )}
             </div>
           )}
 
@@ -164,8 +193,7 @@ export default function BibleRangePickerSheet({
               bookId={bookId}
               chapter={chapter}
               startVerse={startVerse}
-              onTap={existing && startVerse === null ? tapVerse : tapVerse}
-              onConfirmSingle={confirmSingle}
+              onTap={tapVerse}
             />
           )}
         </div>
@@ -185,20 +213,20 @@ function VerseGrid({
   chapter: number;
   startVerse: number | null;
   onTap: (v: number) => void;
-  onConfirmSingle: (v: number) => void;
 }) {
   const [count, setCount] = useState<number | null>(null);
 
-  useState(() => {
-    import("@/lib/actions/bible/bible-queries").then(({ getVerseCounts }) => {
-      getVerseCounts("NKRV").then((table) => {
-        setCount(table[`${bookId}-${chapter}`] ?? 0);
-      });
-    });
-  });
-
   if (count === null) {
-    return <p className="p-6 text-center text-sm text-text-secondary">불러오는 중...</p>;
+    import("@/lib/actions/bible/bible-queries").then(({ getVerseCounts }) => {
+      getVerseCounts("NKRV").then((table) =>
+        setCount(table[`${bookId}-${chapter}`] ?? 0),
+      );
+    });
+    return (
+      <p className="p-6 text-center text-sm text-text-secondary">
+        불러오는 중...
+      </p>
+    );
   }
 
   return (
@@ -209,7 +237,9 @@ function VerseGrid({
           type="button"
           onClick={() => onTap(v)}
           className={`flex h-11 cursor-pointer items-center justify-center rounded-lg text-sm ${
-            v === startVerse ? "bg-brown-primary text-white" : "bg-zinc-100 text-zinc-800"
+            v === startVerse
+              ? "bg-brown-primary text-white"
+              : "bg-zinc-100 text-zinc-800"
           }`}
         >
           {v}
