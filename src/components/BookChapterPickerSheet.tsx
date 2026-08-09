@@ -1,9 +1,9 @@
 "use client";
 
-import { getVerseNumbers } from "@/lib/actions/bible-queries";
+import { getVerseCounts } from "@/lib/actions/bible-queries";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible-books";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Step = "book" | "chapter" | "verse";
 
@@ -31,11 +31,25 @@ export default function BookChapterPickerSheet({
   const [step, setStep] = useState<Step>("book");
   const [selectedBookId, setSelectedBookId] = useState(initialBookId);
   const [selectedChapter, setSelectedChapter] = useState(-1);
-  const [verseNumbers, setVerseNumbers] = useState<number[]>([]);
-  const [loadingVerses, setLoadingVerses] = useState(false);
+  const [verseCounts, setVerseCounts] = useState<Record<string, number> | null>(
+    null,
+  );
+
+  // 시트가 열리자마자 절 개수 표를 한 번만 통째로 가져온다.
+  useEffect(() => {
+    getVerseCounts(translation).then(setVerseCounts);
+  }, [translation]);
 
   const selectedBook =
     selectedBookId !== -1 ? getBook(selectedBookId) : undefined;
+
+  const verseNumbers =
+    verseCounts && selectedBookId !== -1 && selectedChapter !== -1
+      ? Array.from(
+          { length: verseCounts[`${selectedBookId}-${selectedChapter}`] ?? 0 },
+          (_, i) => i + 1,
+        )
+      : [];
 
   function title() {
     if (!selectedBook) return "책 선택";
@@ -54,10 +68,6 @@ export default function BookChapterPickerSheet({
   function pickChapter(chapter: number) {
     setSelectedChapter(chapter);
     setStep("verse");
-    setLoadingVerses(true);
-    getVerseNumbers(selectedBookId, chapter, translation)
-      .then((numbers) => setVerseNumbers(numbers))
-      .finally(() => setLoadingVerses(false));
   }
 
   function pickVerse(verse: number) {
@@ -146,18 +156,13 @@ export default function BookChapterPickerSheet({
             />
           )}
 
-          {step === "verse" &&
-            (loadingVerses ? (
-              <p className="p-4 text-center text-sm text-zinc-400">
-                불러오는 중...
-              </p>
-            ) : (
-              <NumberGrid
-                items={verseNumbers}
-                selected={-1}
-                onSelect={pickVerse}
-              />
-            ))}
+          {step === "verse" && (
+            <NumberGrid
+              items={verseNumbers}
+              selected={-1}
+              onSelect={pickVerse}
+            />
+          )}
         </div>
       </div>
     </div>

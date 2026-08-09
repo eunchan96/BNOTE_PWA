@@ -257,3 +257,16 @@ export async function searchVerses(
   }
   return results;
 }
+
+// 시트(책/장/절 선택)가 "장 개수 표"를 한 번만 통째로 받아가서, 그 이후 장 선택마다
+// 네트워크 왕복 없이 즉시 절 그리드를 그릴 수 있게 해준다. (안드로이드는 로컬 DB라 원래 이 지연이 없음)
+export async function getVerseCountTable(
+  translation: string,
+): Promise<Record<string, number>> {
+  const byChapter = await loadTranslation(translation);
+  const table: Record<string, number> = {};
+  for (const [key, rows] of byChapter.entries()) {
+    table[key] = rows.length;
+  }
+  return table;
+}
