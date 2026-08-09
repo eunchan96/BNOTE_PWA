@@ -1,10 +1,12 @@
 "use client";
 
+import ScrapGroupPickerSheet from "@/components/ScrapGroupPickerSheet";
 import {
   applyVerseHighlight,
   removeVerseHighlight,
   toggleBookmark,
 } from "@/lib/actions/bible-actions";
+import { createScraps } from "@/lib/actions/scraps";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible";
 import { HIGHLIGHT_PALETTE } from "@/lib/highlights";
 import { useState, useTransition } from "react";
@@ -47,6 +49,7 @@ export default function VerseList({
     useState<Record<number, string>>(initialHighlights);
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
   const [mode, setMode] = useState<Mode>("none");
+  const [showScrapPicker, setShowScrapPicker] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function toggleVerse(verse: number) {
@@ -120,6 +123,25 @@ export default function VerseList({
   const hasExistingHighlight = [...selectedVerses].some(
     (v) => highlights[v] !== undefined,
   );
+
+  function handleScrapGroupSelected(groupId: number, groupName: string) {
+    const targets = verses.filter((v) => selectedVerses.has(v.verse));
+    startTransition(async () => {
+      const runCount = await createScraps(
+        groupId,
+        bookId,
+        chapter,
+        targets.map((v) => ({ verse: v.verse, text: v.text })),
+      );
+      setShowScrapPicker(false);
+      clearSelection();
+      alert(
+        runCount > 1
+          ? `'${groupName}'에 ${runCount}개로 나눠서 스크랩했어요`
+          : `'${groupName}'에 스크랩했어요`,
+      );
+    });
+  }
 
   // 장의 최대 절 번호가 100 이상이면(시편 119편처럼) 번호 칸을 조금 더 넓힌다.
   const maxVerse = verses.reduce((max, v) => Math.max(max, v.verse), 1);
@@ -261,6 +283,11 @@ export default function VerseList({
               onClick={() => setMode("colorPicker")}
               disabled={isPending}
             />
+            <ToolbarButton
+              label="스크랩"
+              onClick={() => setShowScrapPicker(true)}
+              disabled={isPending}
+            />
           </div>
         </div>
       )}
@@ -296,6 +323,13 @@ export default function VerseList({
             ))}
           </div>
         </div>
+      )}
+
+      {showScrapPicker && (
+        <ScrapGroupPickerSheet
+          onSelect={handleScrapGroupSelected}
+          onClose={() => setShowScrapPicker(false)}
+        />
       )}
     </>
   );

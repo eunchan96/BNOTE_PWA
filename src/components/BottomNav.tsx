@@ -20,7 +20,8 @@ export default function BottomNav() {
     pathname === "/login" ||
     pathname === "/bible/search" ||
     pathname === "/bible/bookmarks" ||
-    pathname.startsWith("/bible/highlights")
+    pathname.startsWith("/bible/highlights") ||
+    pathname.startsWith("/bible/scraps")
   ) {
     return null;
   }
