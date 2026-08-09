@@ -141,11 +141,12 @@ export default function BibleSearchPage() {
 
   function goToResult(result: SearchResult) {
     addSearchHistory(keyword.trim());
+    const secondary = searchParams.get("secondary");
+    const suffix = secondary ? `&secondary=${secondary}` : "";
     router.push(
-      `/bible/${result.bookId}/${result.chapter}?translation=${translation}&verse=${result.verse}`,
+      `/bible/${result.bookId}/${result.chapter}?translation=${translation}&verse=${result.verse}${suffix}`,
     );
   }
-
   function pickHistory(word: string) {
     setKeyword(word);
     inputRef.current?.focus();

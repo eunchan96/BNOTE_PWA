@@ -7,10 +7,12 @@ export default function BibleLocationPicker({
   bookId,
   title,
   translation,
+  secondary,
 }: {
   bookId: number;
   title: string;
   translation: string;
+  secondary?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,6 +30,7 @@ export default function BibleLocationPicker({
           onClose={() => setIsOpen(false)}
           initialBookId={bookId}
           translation={translation}
+          secondary={secondary}
         />
       )}
     </>

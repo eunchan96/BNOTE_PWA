@@ -3,6 +3,7 @@
 import { TRANSLATIONS } from "@/lib/translations";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 type Step = "primary" | "secondary";
 
@@ -46,7 +47,7 @@ export default function TranslationPickerSheet({
     (t) => t.code !== selectedPrimary,
   );
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">
       <button
         type="button"
@@ -58,7 +59,9 @@ export default function TranslationPickerSheet({
       <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
         <div className="px-4 pt-4 pb-2">
           <h2 className="text-lg font-bold text-zinc-900">
-            {step === "primary" ? "주성경 선택" : `${primaryDisplayName} + 함께보기 선택`}
+            {step === "primary"
+              ? "주성경 선택"
+              : `${primaryDisplayName} + 함께보기 선택`}
           </h2>
         </div>
 
@@ -107,7 +110,8 @@ export default function TranslationPickerSheet({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

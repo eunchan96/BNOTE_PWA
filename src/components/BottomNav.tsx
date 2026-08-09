@@ -26,6 +26,7 @@ export default function BottomNav() {
 
   const chapterMatch = pathname.match(CHAPTER_PATH);
   const translation = searchParams.get("translation") ?? "NKRV";
+  const secondary = searchParams.get("secondary");
 
   let prevHref: string | null = null;
   let nextHref: string | null = null;
@@ -35,11 +36,12 @@ export default function BottomNav() {
     if (getBook(bookId)) {
       const prev = previousChapter(bookId, chapter);
       const next = nextChapter(bookId, chapter);
+      const suffix = secondary ? `&secondary=${secondary}` : "";
       prevHref = prev
-        ? `/bible/${prev.bookId}/${prev.chapter}?translation=${translation}`
+        ? `/bible/${prev.bookId}/${prev.chapter}?translation=${translation}${suffix}`
         : null;
       nextHref = next
-        ? `/bible/${next.bookId}/${next.chapter}?translation=${translation}`
+        ? `/bible/${next.bookId}/${next.chapter}?translation=${translation}${suffix}`
         : null;
     }
   }

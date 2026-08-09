@@ -114,6 +114,16 @@ export default function VerseList({
             (v) => v.verse === verse.verse,
           );
 
+          // 주성경이 title2로 안 쪼개진 경우, 함께보기는 자기 text2가 있어도 한 줄로 합쳐서 보여준다
+          // (안드로이드 SecondaryVerseText.fullText와 동일한 규칙). 쪼개진 경우엔 text만.
+          const secondaryFirstLine = secondary
+            ? verse.title2
+              ? secondary.text
+              : secondary.text2
+                ? `${secondary.text} ${secondary.text2}`
+                : secondary.text
+            : null;
+
           return (
             <li
               key={verse.verse}
@@ -146,10 +156,9 @@ export default function VerseList({
                       {verse.text}
                     </span>
                   </p>
-                  {/* 함께보기: 주성경이 소제목으로 안 쪼개진 경우엔 여기서 한 덩어리로 */}
-                  {secondary && !verse.title2 && (
+                  {secondaryFirstLine && (
                     <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
-                      {secondary.text}
+                      {secondaryFirstLine}
                     </p>
                   )}
                 </div>
@@ -172,12 +181,6 @@ export default function VerseList({
                           {verse.text2}
                         </span>
                       </p>
-                      {/* 함께보기: 주성경이 소제목으로 쪼개진 경우, 함께보기도 같은 지점에서 나눠서 */}
-                      {secondary && (
-                        <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
-                          {secondary.text}
-                        </p>
-                      )}
                       {secondary?.text2 && (
                         <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
                           {secondary.text2}

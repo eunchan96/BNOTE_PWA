@@ -4,6 +4,7 @@ import { getVerseCounts } from "@/lib/actions/bible-queries";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible-books";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Step = "book" | "chapter" | "verse";
 
@@ -22,10 +23,12 @@ export default function BookChapterPickerSheet({
   onClose,
   initialBookId,
   translation,
+  secondary,
 }: {
   onClose: () => void;
   initialBookId: number;
   translation: string;
+  secondary?: string;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("book");
@@ -35,7 +38,6 @@ export default function BookChapterPickerSheet({
     null,
   );
 
-  // 시트가 열리자마자 절 개수 표를 한 번만 통째로 가져온다.
   useEffect(() => {
     getVerseCounts(translation).then(setVerseCounts);
   }, [translation]);
@@ -71,13 +73,14 @@ export default function BookChapterPickerSheet({
   }
 
   function pickVerse(verse: number) {
+    const suffix = secondary ? `&secondary=${secondary}` : "";
     router.push(
-      `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}`,
+      `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}${suffix}`,
     );
     onClose();
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">
       <button
         type="button"
@@ -165,7 +168,8 @@ export default function BookChapterPickerSheet({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
