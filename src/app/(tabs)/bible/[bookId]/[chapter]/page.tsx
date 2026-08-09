@@ -1,7 +1,10 @@
 import BibleTopBar from "@/components/BibleTopBar";
 import ScrollToVerse from "@/components/ScrollToVerse";
+import VerseList from "@/components/VerseList";
 import { getChapterVerses } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
+import { getHighlightsForChapter } from "@/lib/highlights";
+import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
 const DEFAULT_TRANSLATION = "NKRV";
@@ -34,6 +37,15 @@ export default async function BibleChapterPage({
 
   const unit = chapterUnit(bookId);
 
+  // 하이라이트는 로그인 사용자만 있을 수 있으므로, 비로그인 상태에서도 에러 없이 빈 목록으로 처리한다.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const initialHighlights = user
+    ? await getHighlightsForChapter(supabase, translation, bookId, chapter)
+    : {};
+
   return (
     <div className="flex flex-col">
       <BibleTopBar
@@ -45,45 +57,13 @@ export default async function BibleChapterPage({
 
       <div className="mx-auto flex w-full max-w-2xl flex-col px-3 py-2">
         <ScrollToVerse verse={targetVerse} />
-        <ol className="flex flex-col">
-          {verses.map((verse) => (
-            <li
-              key={verse.verse}
-              id={`verse-${verse.verse}`}
-              className="scroll-mt-14"
-            >
-              {verse.title && (
-                <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
-                  {verse.title}
-                </p>
-              )}
-
-              <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
-                  {verse.verse}
-                </span>
-                <p className="flex-1 text-base leading-relaxed text-text-primary">
-                  {verse.text}
-                </p>
-              </div>
-
-              {/* title2가 있을 때만(절 중간에 소제목이 끼어드는 경우) 두 번째 줄을 그린다 */}
-              {verse.title2 && (
-                <>
-                  <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
-                    {verse.title2}
-                  </p>
-                  <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                    <span className="w-[26px] shrink-0" />
-                    <p className="flex-1 text-base leading-relaxed text-text-primary">
-                      {verse.text2}
-                    </p>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ol>
+        <VerseList
+          bookId={bookId}
+          chapter={chapter}
+          translation={translation}
+          verses={verses}
+          initialHighlights={initialHighlights}
+        />
       </div>
     </div>
   );
