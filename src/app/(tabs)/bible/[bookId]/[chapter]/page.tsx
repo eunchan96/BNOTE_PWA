@@ -5,6 +5,7 @@ import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
 import { getHighlightsForChapter } from "@/lib/highlights";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 const DEFAULT_TRANSLATION = "NKRV";
@@ -22,11 +23,18 @@ export default async function BibleChapterPage({
 }) {
   const { bookId: bookIdParam, chapter: chapterParam } = await params;
   const {
-    translation = DEFAULT_TRANSLATION,
-    secondary,
+    translation: translationParam,
+    secondary: secondaryParam,
     verse: verseParam,
   } = await searchParams;
   const targetVerse = verseParam ? Number(verseParam) : null;
+
+  const cookieStore = await cookies();
+  const translation =
+    translationParam ??
+    cookieStore.get("bnote_translation")?.value ??
+    DEFAULT_TRANSLATION;
+  const secondary = secondaryParam ?? cookieStore.get("bnote_secondary")?.value;
 
   const bookId = Number(bookIdParam);
   const chapter = Number(chapterParam);

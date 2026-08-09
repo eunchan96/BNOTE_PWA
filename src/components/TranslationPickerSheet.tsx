@@ -1,5 +1,6 @@
 "use client";
 
+import { saveTranslationPreference } from "@/lib/actions/preferences";
 import { TRANSLATIONS } from "@/lib/translations";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -33,6 +34,8 @@ export default function TranslationPickerSheet({
   }
 
   function pickSecondary(code: string | null) {
+    saveTranslationPreference(selectedPrimary, code);
+
     const params = new URLSearchParams();
     params.set("translation", selectedPrimary);
     if (code) params.set("secondary", code);

@@ -114,8 +114,6 @@ export default function VerseList({
             (v) => v.verse === verse.verse,
           );
 
-          // 주성경이 title2로 안 쪼개진 경우, 함께보기는 자기 text2가 있어도 한 줄로 합쳐서 보여준다
-          // (안드로이드 SecondaryVerseText.fullText와 동일한 규칙). 쪼개진 경우엔 text만.
           const secondaryFirstLine = secondary
             ? verse.title2
               ? secondary.text
@@ -130,66 +128,70 @@ export default function VerseList({
               id={`verse-${verse.verse}`}
               className="scroll-mt-14"
             >
-              {verse.title && (
-                <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
-                  {verse.title}
-                </p>
-              )}
-
               <button
                 type="button"
                 onClick={() => toggleVerse(verse.verse)}
-                className={`flex w-full gap-1 py-1 pb-2 pl-1.5 pr-3 text-left ${
+                className={`block w-full text-left ${
                   isSelected ? "bg-brown-primary/10" : ""
                 }`}
               >
-                <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
-                  {verse.verse}
-                </span>
-                <div className="flex-1">
-                  <p className="text-base leading-relaxed text-text-primary">
-                    <span
-                      style={
-                        colorHex ? { backgroundColor: colorHex } : undefined
-                      }
-                    >
-                      {verse.text}
-                    </span>
+                {verse.title && (
+                  <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
+                    {verse.title}
                   </p>
-                  {secondaryFirstLine && (
-                    <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
-                      {secondaryFirstLine}
-                    </p>
-                  )}
-                </div>
-              </button>
+                )}
 
-              {verse.title2 && (
-                <>
-                  <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
-                    {verse.title2}
-                  </p>
-                  <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
-                    <span className="w-[26px] shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-base leading-relaxed text-text-primary">
-                        <span
-                          style={
-                            colorHex ? { backgroundColor: colorHex } : undefined
-                          }
-                        >
-                          {verse.text2}
-                        </span>
+                <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
+                  <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
+                    {verse.verse}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-base leading-relaxed text-text-primary">
+                      <span
+                        style={
+                          colorHex ? { backgroundColor: colorHex } : undefined
+                        }
+                      >
+                        {verse.text}
+                      </span>
+                    </p>
+                    {secondaryFirstLine && (
+                      <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                        {secondaryFirstLine}
                       </p>
-                      {secondary?.text2 && (
-                        <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
-                          {secondary.text2}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </div>
-                </>
-              )}
+                </div>
+
+                {verse.title2 && (
+                  <>
+                    <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
+                      {verse.title2}
+                    </p>
+                    <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
+                      <span className="w-[26px] shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-base leading-relaxed text-text-primary">
+                          <span
+                            style={
+                              colorHex
+                                ? { backgroundColor: colorHex }
+                                : undefined
+                            }
+                          >
+                            {verse.text2}
+                          </span>
+                        </p>
+                        {secondary?.text2 && (
+                          <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                            {secondary.text2}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </button>
             </li>
           );
         })}

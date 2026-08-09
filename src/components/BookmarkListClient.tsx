@@ -1,6 +1,9 @@
 "use client";
 
-import { removeBookmark, type BookmarkedVerseRow } from "@/lib/actions/bookmarks";
+import {
+  removeBookmark,
+  type BookmarkedVerseRow,
+} from "@/lib/actions/bookmarks";
 import { getBook } from "@/lib/bible-books";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -16,9 +19,7 @@ export default function BookmarkListClient({
   const [, startTransition] = useTransition();
 
   function goToVerse(row: BookmarkedVerseRow) {
-    router.push(
-      `/bible/${row.bookId}/${row.chapter}?translation=NKRV&verse=${row.verse}`,
-    );
+    router.push(`/bible/${row.bookId}/${row.chapter}?verse=${row.verse}`);
   }
 
   function handleDelete(row: BookmarkedVerseRow) {
@@ -82,9 +83,7 @@ export default function BookmarkListClient({
               <p className="text-[13px] font-bold text-brown-primary">
                 {getBook(row.bookId)?.name} {row.chapter}:{row.verse}
               </p>
-              <p className="mt-1 line-clamp-3 text-text-primary">
-                {row.text}
-              </p>
+              <p className="mt-1 line-clamp-3 text-text-primary">{row.text}</p>
             </button>
             {isEditMode && (
               <button
@@ -93,7 +92,12 @@ export default function BookmarkListClient({
                 aria-label="삭제"
                 className="flex h-10 w-10 shrink-0 items-center justify-center text-zinc-400"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M6,19c0,1.1 0.9,2 2,2h8c1.1,0 2,-0.9 2,-2V7H6V19zM19,4h-3.5l-1,-1h-5l-1,1H5v2h14V4z" />
                 </svg>
               </button>
