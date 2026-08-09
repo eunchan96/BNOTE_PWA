@@ -35,9 +35,11 @@ export default function CalendarTab({ sermons }: { sermons: SermonListRow[] }) {
 
   const firstOfMonth = new Date(year, month0, 1);
   const startOffset = firstOfMonth.getDay(); // 0=일
+  const daysInMonth = new Date(year, month0 + 1, 0).getDate();
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
   const gridStart = new Date(year, month0, 1 - startOffset);
 
-  const days: DayCell[] = Array.from({ length: 42 }, (_, i) => {
+  const days: DayCell[] = Array.from({ length: totalCells }, (_, i) => {
     const d = new Date(gridStart);
     d.setDate(gridStart.getDate() + i);
     const dateStr = toDateStr(d);
@@ -142,7 +144,7 @@ export default function CalendarTab({ sermons }: { sermons: SermonListRow[] }) {
               key={day.dateStr}
               type="button"
               onClick={() => setSelectedDate(day.dateStr)}
-              className="flex h-16 cursor-pointer flex-col items-center gap-1 pt-2"
+              className="flex h-[53px] cursor-pointer flex-col items-center pt-1"
             >
               <span
                 className={`text-sm ${isSelected ? "font-bold" : ""} ${
@@ -157,7 +159,7 @@ export default function CalendarTab({ sermons }: { sermons: SermonListRow[] }) {
               >
                 {day.dayOfMonth}
               </span>
-              <div className="flex w-full flex-col gap-0.5 px-2.5">
+              <div className="mt-0.5 flex w-full px-4 flex-col gap-0.5">
                 {day.colors.map((c, i) => (
                   <span
                     key={i}
@@ -192,11 +194,16 @@ export default function CalendarTab({ sermons }: { sermons: SermonListRow[] }) {
                 <span className="flex-1 truncate text-[15px] text-text-primary">
                   {sermon.title}
                 </span>
-                {sermon.refLabel && (
-                  <span className="shrink-0 text-xs text-brown-primary">
-                    {sermon.refLabel}
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="text-xs text-zinc-400">
+                    {sermon.preacherName ?? "설교자 미지정"}
                   </span>
-                )}
+                  {sermon.refLabel && (
+                    <span className="mt-0.5 text-xs text-brown-primary">
+                      {sermon.refLabel}
+                    </span>
+                  )}
+                </span>
               </Link>
             </li>
           ))}

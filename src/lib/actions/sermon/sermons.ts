@@ -74,7 +74,35 @@ export type SermonListRow = {
   colorHex: string | null;
   refLabel: string;
   firstBookId: number | null;
+  preacherName: string | null;
 };
+
+const SHORT_NAMES = [
+  "창", "출", "레", "민", "신", "수", "삿", "룻", "삼상", "삼하",
+  "왕상", "왕하", "대상", "대하", "스", "느", "에", "욥", "시", "잠",
+  "전", "아", "사", "렘", "애", "겔", "단", "호", "욜", "암",
+  "옵", "욘", "미", "나", "합", "습", "학", "슥", "말", "마",
+  "막", "눅", "요", "행", "롬", "고전", "고후", "갈", "엡", "빌",
+  "골", "살전", "살후", "딤전", "딤후", "딛", "몬", "히", "약", "벧전",
+  "벧후", "요일", "요이", "요삼", "유", "계",
+];
+
+function toShortLabel(r: {
+  start_book_id: number;
+  start_chapter: number;
+  start_verse: number;
+  end_book_id: number;
+  end_chapter: number;
+  end_verse: number;
+}): string {
+  const abbr = SHORT_NAMES[r.start_book_id - 1] ?? "?";
+  if (r.start_book_id === r.end_book_id && r.start_chapter === r.end_chapter) {
+    return r.start_verse === r.end_verse
+      ? `${abbr} ${r.start_chapter}:${r.start_verse}`
+      : `${abbr} ${r.start_chapter}:${r.start_verse}~${r.end_verse}`;
+  }
+  return `${abbr} ${r.start_chapter}:${r.start_verse}~${r.end_chapter}:${r.end_verse}`;
+}
 
 export async function getSermons(): Promise<SermonListRow[]> {
   const { supabase, user } = await requireUser();
@@ -82,29 +110,19 @@ export async function getSermons(): Promise<SermonListRow[]> {
   const { data, error } = await supabase
     .from("sermon")
     .select(
-      "id, title, sermon_date, sermon_category(color_hex), sermon_bible_ref(start_book_id, start_chapter, start_verse, end_book_id, end_chapter, end_verse)",
+      "id, title, sermon_date, sermon_category(color_hex), preacher(name), sermon_bible_ref(start_book_id, start_chapter, start_verse, end_book_id, end_chapter, end_verse)",
     )
     .eq("member_id", user.id)
     .order("sermon_date", { ascending: false });
 
   if (error) throw error;
 
-  const { getBook, chapterUnit } = await import("@/lib/bible/bible-books");
-
   return (data ?? []).map((s) => {
     const refs = s.sermon_bible_ref ?? [];
-    const refLabel = refs
-      .map((r) => {
-        const book = getBook(r.start_book_id);
-        const unit = chapterUnit(r.start_book_id);
-        if (r.start_verse === r.end_verse && r.start_chapter === r.end_chapter) {
-          return `${book?.name} ${r.start_chapter}${unit} ${r.start_verse}절`;
-        }
-        return `${book?.name} ${r.start_chapter}${unit} ${r.start_verse}~${r.end_verse}절`;
-      })
-      .join(", ");
+    const refLabel = refs.map(toShortLabel).join(", ");
 
     const category = Array.isArray(s.sermon_category) ? s.sermon_category[0] : s.sermon_category;
+    const preacher = Array.isArray(s.preacher) ? s.preacher[0] : s.preacher;
 
     return {
       id: s.id,
@@ -113,6 +131,7 @@ export async function getSermons(): Promise<SermonListRow[]> {
       colorHex: category?.color_hex ?? null,
       refLabel,
       firstBookId: refs[0]?.start_book_id ?? null,
+      preacherName: preacher?.name ?? null,
     };
   });
 }
