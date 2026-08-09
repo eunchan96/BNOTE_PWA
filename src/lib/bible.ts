@@ -277,3 +277,15 @@ export async function searchVerses(
   }
   return results;
 }
+
+// 단어 메모 "다른 구절에도 추가"용 — 공백 제거 없이 정확히 일치하는 부분 문자열만 찾는다
+// (본문에서 정확한 시작/끝 위치를 다시 계산해야 해서 공백 제거 검색은 쓸 수 없다).
+export async function findVersesContainingExact(
+  translation: string,
+  word: string,
+): Promise<SearchableVerse[]> {
+  await loadTranslation(translation);
+  const all = searchCache.get(translation.toLowerCase()) ?? [];
+  if (word.trim() === "") return [];
+  return all.filter((v) => v.text.includes(word));
+}

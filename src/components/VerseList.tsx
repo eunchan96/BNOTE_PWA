@@ -351,20 +351,45 @@ export default function VerseList({
         !(end <= m.startOffset || start >= m.endOffset),
     );
 
+    // 드래그한 범위와 정확히 일치하는 기존 메모는 전부 "같은 단어" 그룹(primary)으로,
+    // 범위가 다른 것들만 "겹치는 기존 메모"로 분류한다.
+    const exactMatches = overlapping.filter(
+      (m) => m.startOffset === start && m.endOffset === end,
+    );
+    const restOverlapping = overlapping.filter(
+      (m) => !(m.startOffset === start && m.endOffset === end),
+    );
+
+    const primaryBoxes: WordMemoBoxInput[] =
+      exactMatches.length > 0
+        ? exactMatches.map((m) => ({
+            id: m.id,
+            start: m.startOffset,
+            end: m.endOffset,
+            selectedText: fullText.slice(m.startOffset, m.endOffset),
+            text: m.text,
+            kind: "primary",
+          }))
+        : [
+            {
+              id: null,
+              start,
+              end,
+              selectedText: fullText.slice(start, end),
+              text: "",
+              kind: "primary",
+            },
+          ];
+
     const boxes: WordMemoBoxInput[] = [
-      {
-        id: null,
-        start,
-        end,
-        selectedText: fullText.slice(start, end),
-        text: "",
-      },
-      ...overlapping.map((m) => ({
+      ...primaryBoxes,
+      ...restOverlapping.map((m) => ({
         id: m.id,
         start: m.startOffset,
         end: m.endOffset,
         selectedText: fullText.slice(m.startOffset, m.endOffset),
         text: m.text,
+        kind: "overlapping" as const,
       })),
     ];
 
