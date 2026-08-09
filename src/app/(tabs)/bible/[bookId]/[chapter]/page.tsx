@@ -14,11 +14,18 @@ export default async function BibleChapterPage({
   searchParams,
 }: {
   params: Promise<{ bookId: string; chapter: string }>;
-  searchParams: Promise<{ translation?: string; verse?: string }>;
+  searchParams: Promise<{
+    translation?: string;
+    secondary?: string;
+    verse?: string;
+  }>;
 }) {
   const { bookId: bookIdParam, chapter: chapterParam } = await params;
-  const { translation = DEFAULT_TRANSLATION, verse: verseParam } =
-    await searchParams;
+  const {
+    translation = DEFAULT_TRANSLATION,
+    secondary,
+    verse: verseParam,
+  } = await searchParams;
   const targetVerse = verseParam ? Number(verseParam) : null;
 
   const bookId = Number(bookIdParam);
@@ -35,9 +42,12 @@ export default async function BibleChapterPage({
     notFound();
   }
 
+  const secondaryVerses = secondary
+    ? await getChapterVerses(bookId, chapter, secondary)
+    : null;
+
   const unit = chapterUnit(bookId);
 
-  // 하이라이트는 로그인 사용자만 있을 수 있으므로, 비로그인 상태에서도 에러 없이 빈 목록으로 처리한다.
   const supabase = await createClient();
   const {
     data: { user },
@@ -53,6 +63,7 @@ export default async function BibleChapterPage({
         chapter={chapter}
         title={`${book.name} ${chapter}${unit}`}
         translation={translation}
+        secondary={secondary}
       />
 
       <div className="mx-auto flex w-full max-w-2xl flex-col px-3 py-2">
@@ -62,6 +73,7 @@ export default async function BibleChapterPage({
           chapter={chapter}
           translation={translation}
           verses={verses}
+          secondaryVerses={secondaryVerses}
           initialHighlights={initialHighlights}
         />
       </div>

@@ -1,25 +1,35 @@
+"use client";
+
 import BibleLocationPicker from "@/components/BibleLocationPicker";
-import TranslationSelect from "@/components/TranslationSelect";
+import TranslationPickerSheet from "@/components/TranslationPickerSheet";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function BibleTopBar({
   bookId,
   chapter,
   title,
   translation,
+  secondary,
 }: {
   bookId: number;
   chapter: number;
   title: string;
   translation: string;
+  secondary?: string;
 }) {
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-2 overflow-x-auto bg-brown-primary px-2">
-      <TranslationSelect
-        bookId={bookId}
-        chapter={chapter}
-        translation={translation}
-      />
+      <button
+        type="button"
+        onClick={() => setIsPickerOpen(true)}
+        className="h-8 shrink-0 rounded bg-brown-dark px-2 text-xs font-medium text-white"
+      >
+        {translation}
+        {secondary ? ` +${secondary}` : ""}
+      </button>
 
       <BibleLocationPicker
         bookId={bookId}
@@ -38,7 +48,6 @@ export default function BibleTopBar({
           <path d="M15.5,14h-0.79l-0.28,-0.27C15.41,12.59 16,11.11 16,9.5 16,5.91 13.09,3 9.5,3S3,5.91 3,9.5 5.91,16 9.5,16c1.61,0 3.09,-0.59 4.23,-1.57l0.27,0.28v0.79l5,4.99L20.49,19l-4.99,-5zM9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14z" />
         </svg>
       </Link>
-
       <Link
         href="/bible/bookmarks"
         aria-label="북마크"
@@ -48,10 +57,19 @@ export default function BibleTopBar({
           <path d="M17,3H7c-1.1,0 -2,0.9 -2,2v16l7,-3 7,3V5c0,-1.1 -0.9,-2 -2,-2z" />
         </svg>
       </Link>
-
       <TopBarIconButton label="메뉴">
         <path d="M3,18h18v-2H3v2zM3,13h18v-2H3v2zM3,6v2h18V6H3z" />
       </TopBarIconButton>
+
+      {isPickerOpen && (
+        <TranslationPickerSheet
+          bookId={bookId}
+          chapter={chapter}
+          translation={translation}
+          secondary={secondary}
+          onClose={() => setIsPickerOpen(false)}
+        />
+      )}
     </header>
   );
 }

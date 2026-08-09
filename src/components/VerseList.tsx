@@ -16,12 +16,14 @@ export default function VerseList({
   chapter,
   translation,
   verses,
+  secondaryVerses,
   initialHighlights,
 }: {
   bookId: number;
   chapter: number;
   translation: string;
   verses: BibleVerseRow[];
+  secondaryVerses: BibleVerseRow[] | null;
   initialHighlights: Record<number, string>;
 }) {
   const [highlights, setHighlights] =
@@ -108,6 +110,9 @@ export default function VerseList({
         {verses.map((verse) => {
           const colorHex = highlights[verse.verse];
           const isSelected = selectedVerses.has(verse.verse);
+          const secondary = secondaryVerses?.find(
+            (v) => v.verse === verse.verse,
+          );
 
           return (
             <li
@@ -131,13 +136,23 @@ export default function VerseList({
                 <span className="mt-0.5 w-[26px] shrink-0 text-center font-bold text-text-secondary">
                   {verse.verse}
                 </span>
-                <p className="flex-1 text-base leading-relaxed text-text-primary">
-                  <span
-                    style={colorHex ? { backgroundColor: colorHex } : undefined}
-                  >
-                    {verse.text}
-                  </span>
-                </p>
+                <div className="flex-1">
+                  <p className="text-base leading-relaxed text-text-primary">
+                    <span
+                      style={
+                        colorHex ? { backgroundColor: colorHex } : undefined
+                      }
+                    >
+                      {verse.text}
+                    </span>
+                  </p>
+                  {/* 함께보기: 주성경이 소제목으로 안 쪼개진 경우엔 여기서 한 덩어리로 */}
+                  {secondary && !verse.title2 && (
+                    <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                      {secondary.text}
+                    </p>
+                  )}
+                </div>
               </button>
 
               {verse.title2 && (
@@ -147,15 +162,28 @@ export default function VerseList({
                   </p>
                   <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
                     <span className="w-[26px] shrink-0" />
-                    <p className="flex-1 text-base leading-relaxed text-text-primary">
-                      <span
-                        style={
-                          colorHex ? { backgroundColor: colorHex } : undefined
-                        }
-                      >
-                        {verse.text2}
-                      </span>
-                    </p>
+                    <div className="flex-1">
+                      <p className="text-base leading-relaxed text-text-primary">
+                        <span
+                          style={
+                            colorHex ? { backgroundColor: colorHex } : undefined
+                          }
+                        >
+                          {verse.text2}
+                        </span>
+                      </p>
+                      {/* 함께보기: 주성경이 소제목으로 쪼개진 경우, 함께보기도 같은 지점에서 나눠서 */}
+                      {secondary && (
+                        <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                          {secondary.text}
+                        </p>
+                      )}
+                      {secondary?.text2 && (
+                        <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                          {secondary.text2}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
