@@ -236,26 +236,37 @@ export async function getHighlightsForBook(bookId: number): Promise<{
 
   if (error) throw error;
 
-  // 같은 절에 부분 하이라이트가 여러 개 있을 수 있으니 (장,절) 기준으로 묶고,
-  // 대표 색상은 가장 나중에 추가된 것(= id가 가장 큰 것)으로 정한다.
+  type RawRange = {
+    id: number;
+    segment: number;
+    start: number;
+    end: number;
+    colorHex: string;
+  };
+
   const grouped = new Map<
     string,
-    {
-      chapter: number;
-      verse: number;
-      translation: string;
-      latestColor: string;
-    }
+    { chapter: number; verse: number; translation: string; ranges: RawRange[] }
   >();
 
   for (const row of data ?? []) {
     const key = `${row.chapter}-${row.verse}`;
-    grouped.set(key, {
-      chapter: row.chapter,
-      verse: row.verse,
-      translation: row.translation,
-      latestColor: row.color_hex,
-    });
+    const entry = grouped.get(key);
+    const range: RawRange = {
+      id: row.id,
+      segment: row.segment,
+      start: row.start_offset,
+      end: row.end_offset,
+      colorHex: row.color_hex,
+    };
+    if (entry) entry.ranges.push(range);
+    else
+      grouped.set(key, {
+        chapter: row.chapter,
+        verse: row.verse,
+        translation: row.translation,
+        ranges: [range],
+      });
   }
 
   const verseCache = new Map<string, Awaited<ReturnType<typeof getChapterVerses>>>();
@@ -269,12 +280,35 @@ export async function getHighlightsForBook(bookId: number): Promise<{
       verseCache.set(cacheKey, verses);
     }
     const verseData = verses.find((v) => v.verse === entry.verse);
+    const fullText0 = verseData?.text ?? "";
+    const fullText1 = verseData?.text2 ?? "";
+
+    const segment0Ranges = entry.ranges.filter((r) => r.segment === 0);
+    const segment1Ranges = entry.ranges.filter((r) => r.segment === 1);
+
+    const isWholeVerse = segment0Ranges.some((r) => r.start === 0 && r.end >= fullText0.length);
+
+    let preview: string;
+    if (isWholeVerse) {
+      preview = fullText1 ? `${fullText0} ${fullText1}` : fullText0;
+    } else {
+      // 전체가 아니면, 실제로 하이라이트된 부분만 잘라서 보여준다.
+      const parts = [...segment0Ranges, ...segment1Ranges]
+        .sort((a, b) => a.start - b.start)
+        .map((r) => {
+          const source = r.segment === 1 ? fullText1 : fullText0;
+          return source.slice(r.start, r.end);
+        });
+      preview = parts.join(" … ");
+    }
+
+    const latestColor = entry.ranges[entry.ranges.length - 1].colorHex;
 
     rows.push({
       chapter: entry.chapter,
       verse: entry.verse,
-      colorHex: entry.latestColor,
-      preview: verseData ? (verseData.text2 ? `${verseData.text} ${verseData.text2}` : verseData.text) : "",
+      colorHex: latestColor,
+      preview,
     });
   }
 

@@ -337,6 +337,16 @@ export default function VerseList({
     setMode("none");
   }
 
+  function handleCopySelection() {
+    if (!pendingSelection) return;
+    const { verse, segment, start, end } = pendingSelection;
+    const verseData = verses.find((v) => v.verse === verse);
+    const fullText =
+      segment === 1 ? (verseData?.text2 ?? "") : (verseData?.text ?? "");
+    navigator.clipboard.writeText(fullText.slice(start, end));
+    clearSelection();
+  }
+
   function handleScrapGroupSelected(groupId: number, groupName: string) {
     const targets = verses.filter((v) => selectedVerses.has(v.verse));
     startTransition(async () => {
@@ -533,6 +543,7 @@ export default function VerseList({
           <div className="flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
+            <ToolbarButton label="복사" onClick={handleCopySelection} />
             <ToolbarButton
               label="하이라이트"
               onClick={() => setMode("textColorPicker")}
