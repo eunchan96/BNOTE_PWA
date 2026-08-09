@@ -1,6 +1,7 @@
 "use client";
 
 import BibleRangePickerSheet from "@/components/sermon/BibleRangePickerSheet";
+import DatePickerSheet from "@/components/sermon/DatePickerSheet";
 import NamePickerSheet from "@/components/sermon/NamePickerSheet";
 import {
   createPreacher,
@@ -39,17 +40,21 @@ export default function SermonFormClient({
     existing?.categoryId ?? null,
   );
   const [refs, setRefs] = useState<BibleRefInput[]>(existing?.refs ?? []);
-  const [photoUrls, setPhotoUrls] = useState<string[]>(
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>(
     existing?.photoUrls ?? [],
   );
+  const [pendingPhotos, setPendingPhotos] = useState<
+    { file: File; previewUrl: string }[]
+  >([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [preacherList, setPreacherList] = useState(preachers);
   const [showPreacherPicker, setShowPreacherPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [rangePicker, setRangePicker] = useState<{
     index: number | null;
   } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   function refLabel(ref: BibleRefInput) {
     const book = getBook(ref.startBookId);
@@ -82,33 +87,27 @@ export default function SermonFormClient({
     setRefs((prev) => prev.filter((_, i) => i !== rangePicker.index));
   }
 
-  async function handlePhotoUpload(files: FileList | null) {
+  function handlePhotoSelect(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const remaining = 5 - photoUrls.length;
+    const remaining = 5 - existingPhotoUrls.length - pendingPhotos.length;
     if (remaining <= 0) return;
 
-    setIsUploading(true);
-    const supabase = createClient();
-    const newUrls: string[] = [];
+    const picked = Array.from(files)
+      .slice(0, remaining)
+      .map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
 
-    for (const file of Array.from(files).slice(0, remaining)) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage
-        .from("sermon-photos")
-        .upload(path, file);
-      if (!error) {
-        const { data } = supabase.storage
-          .from("sermon-photos")
-          .getPublicUrl(path);
-        newUrls.push(data.publicUrl);
-      }
-    }
-    setPhotoUrls((prev) => [...prev, ...newUrls]);
-    setIsUploading(false);
+    setPendingPhotos((prev) => [...prev, ...picked]);
   }
 
-  function removePhoto(index: number) {
-    setPhotoUrls((prev) => prev.filter((_, i) => i !== index));
+  function removeExistingPhoto(index: number) {
+    setExistingPhotoUrls((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removePendingPhoto(index: number) {
+    setPendingPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   async function handleSubmit() {
@@ -117,6 +116,33 @@ export default function SermonFormClient({
       return;
     }
     setIsSaving(true);
+
+    const supabase = createClient();
+    const uploadedUrls: string[] = [];
+    const uploadErrors: string[] = [];
+
+    for (const { file } of pendingPhotos) {
+      const extMatch = file.name.match(/\.[a-zA-Z0-9]+$/);
+      const ext = extMatch ? extMatch[0] : "";
+      const path = `${crypto.randomUUID()}${ext}`;
+      const { error } = await supabase.storage
+        .from("sermon-photos")
+        .upload(path, file);
+      if (error) {
+        uploadErrors.push(error.message);
+        continue;
+      }
+      const { data } = supabase.storage
+        .from("sermon-photos")
+        .getPublicUrl(path);
+      uploadedUrls.push(data.publicUrl);
+    }
+
+    if (uploadErrors.length > 0) {
+      alert(`사진 업로드 중 오류가 있었어요:\n${uploadErrors.join("\n")}`);
+    }
+
+    const finalPhotoUrls = [...existingPhotoUrls, ...uploadedUrls];
     const input = {
       title,
       sermonDate,
@@ -125,7 +151,7 @@ export default function SermonFormClient({
       preacherId,
       categoryId,
       refs,
-      photoUrls,
+      photoUrls: finalPhotoUrls,
     };
 
     if (existing) {
@@ -157,15 +183,13 @@ export default function SermonFormClient({
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">
           {existing ? "설교 수정" : "설교 작성"}
         </h1>
-        <label className="relative cursor-pointer px-3 py-3 text-[15px] text-white underline decoration-white/70 underline-offset-2">
+        <button
+          type="button"
+          onClick={() => setShowDatePicker(true)}
+          className="cursor-pointer px-3 py-3 text-[15px] text-white underline decoration-white/70 underline-offset-2"
+        >
           {formatDateLabel(sermonDate)}
-          <input
-            type="date"
-            value={sermonDate}
-            onChange={(e) => setSermonDate(e.target.value)}
-            className="absolute inset-0 cursor-pointer opacity-0"
-          />
-        </label>
+        </button>
       </header>
 
       <div className="flex flex-1 flex-col overflow-y-auto p-4">
@@ -256,14 +280,12 @@ export default function SermonFormClient({
 
         <div className="mt-3 flex gap-2">
           <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-input-background px-3 py-3 text-[15px] text-text-primary">
-            {isUploading
-              ? "업로드 중..."
-              : `+ 사진 추가 (${photoUrls.length}/5)`}
+            {`+ 사진 추가 (${existingPhotoUrls.length + pendingPhotos.length}/5)`}
             <input
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => handlePhotoUpload(e.target.files)}
+              onChange={(e) => handlePhotoSelect(e.target.files)}
               className="hidden"
             />
           </label>
@@ -276,9 +298,9 @@ export default function SermonFormClient({
           />
         </div>
 
-        {photoUrls.length > 0 && (
+        {(existingPhotoUrls.length > 0 || pendingPhotos.length > 0) && (
           <div className="mt-3 flex gap-2 overflow-x-auto">
-            {photoUrls.map((url, index) => (
+            {existingPhotoUrls.map((url, index) => (
               <div key={url} className="relative h-20 w-20 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -288,7 +310,25 @@ export default function SermonFormClient({
                 />
                 <button
                   type="button"
-                  onClick={() => removePhoto(index)}
+                  onClick={() => removeExistingPhoto(index)}
+                  aria-label="삭제"
+                  className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {pendingPhotos.map((p, index) => (
+              <div key={p.previewUrl} className="relative h-20 w-20 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.previewUrl}
+                  alt=""
+                  className="h-full w-full rounded-lg object-cover opacity-80"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePendingPhoto(index)}
                   aria-label="삭제"
                   className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
                 >
@@ -343,6 +383,14 @@ export default function SermonFormClient({
           onSelect={handleRangeSelected}
           onDelete={rangePicker.index !== null ? handleRangeDelete : undefined}
           onClose={() => setRangePicker(null)}
+        />
+      )}
+
+      {showDatePicker && (
+        <DatePickerSheet
+          value={sermonDate}
+          onSelect={setSermonDate}
+          onClose={() => setShowDatePicker(false)}
         />
       )}
     </div>
