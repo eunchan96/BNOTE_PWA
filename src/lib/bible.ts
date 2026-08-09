@@ -9,6 +9,16 @@ export type BibleVerseRow = {
   text2?: string;
 };
 
+// 함께보기(대역본) 전용 — title2/text2를 절대 합치지 않은 원본 그대로.
+// (안드로이드 SecondaryVerseText가 raw text/text2를 그대로 들고 있는 것과 동일)
+export type RawVerseRow = {
+  verse: number;
+  text: string;
+  title?: string;
+  title2?: string;
+  text2?: string;
+};
+
 type FlatVerse = {
   book?: number;
   book_id?: number;
@@ -39,17 +49,19 @@ type NestedBook = {
 };
 
 const cache = new Map<string, Map<string, BibleVerseRow[]>>();
-const inFlight = new Map<string, Promise<Map<string, BibleVerseRow[]>>>();
+const rawCache = new Map<string, Map<string, RawVerseRow[]>>();
+const searchCache = new Map<string, SearchableVerse[]>();
+const inFlight = new Map<string, Promise<void>>();
 
 function chapterKey(bookId: number, chapter: number): string {
   return `${bookId}-${chapter}`;
 }
 
-function addRow(
-  byChapter: Map<string, BibleVerseRow[]>,
+function addRow<T>(
+  byChapter: Map<string, T[]>,
   bookId: number,
   chapter: number,
-  row: BibleVerseRow,
+  row: T,
 ) {
   const key = chapterKey(bookId, chapter);
   const list = byChapter.get(key);
@@ -61,41 +73,32 @@ function addRow(
 }
 
 /**
- * VerseAdapter.kt와 동일한 규칙:
- * - title2가 있으면 → text/title2/text2를 그대로 분리 유지 (렌더링 쪽에서 두 줄로 나눠 보여줌)
- * - title2가 없고 text2만 있으면 → text와 text2를 공백으로 이어붙여 하나의 text로 합침
- * - 둘 다 없으면 → text 그대로
+ * VerseAdapter.kt와 동일한 규칙: title2가 있으면 분리 유지, title2가 없고 text2만 있으면
+ * text와 text2를 공백으로 이어붙임. 읽기 화면(주성경) 렌더링에만 쓰는 "합쳐진" 버전.
  */
-function finalizeRow(
-  verse: number,
-  text: string,
-  title: string | undefined,
-  title2: string | undefined,
-  text2: string | undefined,
-): BibleVerseRow {
-  if (title2 && title2.trim() !== "") {
-    return { verse, text, title, title2, text2 };
+function finalizeRow(row: RawVerseRow): BibleVerseRow {
+  if (row.title2 && row.title2.trim() !== "") {
+    return row;
   }
-  if (text2 && text2.trim() !== "") {
-    return { verse, text: `${text} ${text2}`, title };
+  if (row.text2 && row.text2.trim() !== "") {
+    return { verse: row.verse, text: `${row.text} ${row.text2}`, title: row.title };
   }
-  return { verse, text, title };
+  return { verse: row.verse, text: row.text, title: row.title };
 }
 
-function parseFlat(data: FlatVerse[]): Map<string, BibleVerseRow[]> {
-  const byChapter = new Map<string, BibleVerseRow[]>();
+function parseFlatRaw(data: FlatVerse[]): Map<string, RawVerseRow[]> {
+  const byChapter = new Map<string, RawVerseRow[]>();
   for (const v of data) {
     const bookId = v.book_id ?? v.book;
     if (bookId === undefined) continue;
 
-    const row = finalizeRow(
-      Number(v.verse),
-      v.text,
-      v.title,
-      v.title2 ?? v.title_2,
-      v.text2 ?? v.text_2,
-    );
-    addRow(byChapter, bookId, v.chapter, row);
+    addRow(byChapter, bookId, v.chapter, {
+      verse: Number(v.verse),
+      text: v.text,
+      title: v.title,
+      title2: v.title2 ?? v.title_2,
+      text2: v.text2 ?? v.text_2,
+    });
   }
   return byChapter;
 }
@@ -103,11 +106,10 @@ function parseFlat(data: FlatVerse[]): Map<string, BibleVerseRow[]> {
 /**
  * NIV/ESV 형태. bookId는 배열 순서(1번째=창세기=1)로 매긴다.
  * chapter 번호는 "chapter" 필드가 있으면 그대로, 없으면 "ID"(예: "OT:GEN.2")의 마지막 "." 뒤 숫자.
- * 같은 절 번호가 연속으로 여러 번 나오면(ESV 특유의 문제) 먼저 공백으로 합친 뒤,
- * text_2가 있으면 title2/text2 규칙을 그대로 적용한다.
+ * 같은 절 번호가 연속으로 여러 번 나오면(ESV 특유의 문제) 공백으로 합친다. (title2/text2는 합치지 않음)
  */
-function parseNested(data: NestedBook[]): Map<string, BibleVerseRow[]> {
-  const byChapter = new Map<string, BibleVerseRow[]>();
+function parseNestedRaw(data: NestedBook[]): Map<string, RawVerseRow[]> {
+  const byChapter = new Map<string, RawVerseRow[]>();
 
   data.forEach((book, index) => {
     const bookId = index + 1;
@@ -118,7 +120,10 @@ function parseNested(data: NestedBook[]): Map<string, BibleVerseRow[]> {
           ? Number(chapterObj.chapter)
           : Number(chapterObj.ID?.split(".").pop());
 
-      const merged = new Map<number, { text: string; text2?: string; title2?: string }>();
+      const merged = new Map<
+        number,
+        { text: string; text2?: string; title2?: string }
+      >();
       const order: number[] = [];
 
       for (const v of chapterObj.verses) {
@@ -126,7 +131,8 @@ function parseNested(data: NestedBook[]): Map<string, BibleVerseRow[]> {
         const existing = merged.get(verseNum);
         if (existing) {
           existing.text += " " + v.text;
-          if (v.text_2) existing.text2 = (existing.text2 ? existing.text2 + " " : "") + v.text_2;
+          if (v.text_2)
+            existing.text2 = (existing.text2 ? existing.text2 + " " : "") + v.text_2;
           if (v.title_2) existing.title2 = v.title_2;
         } else {
           merged.set(verseNum, { text: v.text, text2: v.text_2, title2: v.title_2 });
@@ -136,12 +142,12 @@ function parseNested(data: NestedBook[]): Map<string, BibleVerseRow[]> {
 
       for (const verseNum of order) {
         const m = merged.get(verseNum)!;
-        addRow(
-          byChapter,
-          bookId,
-          chapter,
-          finalizeRow(verseNum, m.text, undefined, m.title2, m.text2),
-        );
+        addRow(byChapter, bookId, chapter, {
+          verse: verseNum,
+          text: m.text,
+          title2: m.title2,
+          text2: m.text2,
+        });
       }
     }
   });
@@ -149,13 +155,9 @@ function parseNested(data: NestedBook[]): Map<string, BibleVerseRow[]> {
   return byChapter;
 }
 
-async function loadTranslation(
-  translation: string,
-): Promise<Map<string, BibleVerseRow[]>> {
+async function loadTranslation(translation: string): Promise<void> {
   const code = translation.toLowerCase();
-
-  const cached = cache.get(code);
-  if (cached) return cached;
+  if (cache.has(code)) return;
 
   const pending = inFlight.get(code);
   if (pending) return pending;
@@ -173,30 +175,48 @@ async function loadTranslation(
       raw = await readFile(filePath, "utf-8");
     } catch (e) {
       console.error(`[lib/bible] 파일 읽기 실패: ${filePath}`, e);
-      const empty = new Map<string, BibleVerseRow[]>();
-      cache.set(code, empty);
-      return empty;
+      cache.set(code, new Map());
+      rawCache.set(code, new Map());
+      searchCache.set(code, []);
+      return;
     }
 
     const data = JSON.parse(raw);
     const isNested =
       Array.isArray(data) && data.length > 0 && "chapters" in data[0];
 
-    const byChapter = isNested ? parseNested(data) : parseFlat(data);
+    const rawByChapter = isNested ? parseNestedRaw(data) : parseFlatRaw(data);
 
-    for (const list of byChapter.values()) {
-      list.sort((a, b) => a.verse - b.verse);
+    const byChapter = new Map<string, BibleVerseRow[]>();
+    const flatSearch: SearchableVerse[] = [];
+
+    for (const [key, rows] of rawByChapter.entries()) {
+      const [bookIdStr, chapterStr] = key.split("-");
+      const bookId = Number(bookIdStr);
+      const chapter = Number(chapterStr);
+
+      const combined = rows.map(finalizeRow).sort((a, b) => a.verse - b.verse);
+      byChapter.set(key, combined);
+
+      for (const row of combined) {
+        flatSearch.push({ bookId, chapter, verse: row.verse, text: row.text });
+      }
+
+      rows.sort((a, b) => a.verse - b.verse);
     }
 
-    buildSearchCache(code, byChapter);
+    flatSearch.sort(
+      (a, b) => a.bookId - b.bookId || a.chapter - b.chapter || a.verse - b.verse,
+    );
+
     cache.set(code, byChapter);
-    return byChapter;
+    rawCache.set(code, rawByChapter);
+    searchCache.set(code, flatSearch);
   })();
 
   inFlight.set(code, promise);
-  const result = await promise;
+  await promise;
   inFlight.delete(code);
-  return result;
 }
 
 export async function getChapterVerses(
@@ -204,13 +224,34 @@ export async function getChapterVerses(
   chapter: number,
   translation: string,
 ): Promise<BibleVerseRow[]> {
-  const byChapter = await loadTranslation(translation);
-  return byChapter.get(chapterKey(bookId, chapter)) ?? [];
+  await loadTranslation(translation);
+  return cache.get(translation.toLowerCase())?.get(chapterKey(bookId, chapter)) ?? [];
+}
+
+// 함께보기(대역본) 전용 — title2/text2가 합쳐지지 않은 원본 그대로 반환한다.
+export async function getChapterVersesRaw(
+  bookId: number,
+  chapter: number,
+  translation: string,
+): Promise<RawVerseRow[]> {
+  await loadTranslation(translation);
+  return rawCache.get(translation.toLowerCase())?.get(chapterKey(bookId, chapter)) ?? [];
+}
+
+// ── 절 개수 표 ──────────────────────────────────────
+export async function getVerseCountTable(
+  translation: string,
+): Promise<Record<string, number>> {
+  await loadTranslation(translation);
+  const byChapter = cache.get(translation.toLowerCase()) ?? new Map();
+  const table: Record<string, number> = {};
+  for (const [key, rows] of byChapter.entries()) {
+    table[key] = rows.length;
+  }
+  return table;
 }
 
 // ── 검색 ──────────────────────────────────────────
-// 안드로이드 BibleDao.searchVerses와 동일한 로직: 공백 제거 후 부분일치, text 컬럼만, 최대 200개.
-
 export type SearchableVerse = {
   bookId: number;
   chapter: number;
@@ -218,33 +259,12 @@ export type SearchableVerse = {
   text: string;
 };
 
-const searchCache = new Map<string, SearchableVerse[]>();
-
-function buildSearchCache(
-  code: string,
-  byChapter: Map<string, BibleVerseRow[]>,
-) {
-  const flat: SearchableVerse[] = [];
-  for (const [key, rows] of byChapter.entries()) {
-    const [bookIdStr, chapterStr] = key.split("-");
-    const bookId = Number(bookIdStr);
-    const chapter = Number(chapterStr);
-    for (const row of rows) {
-      flat.push({ bookId, chapter, verse: row.verse, text: row.text });
-    }
-  }
-  flat.sort((a, b) => a.bookId - b.bookId || a.chapter - b.chapter || a.verse - b.verse);
-  searchCache.set(code, flat);
-}
-
 export async function searchVerses(
   translation: string,
   keyword: string,
 ): Promise<SearchableVerse[]> {
-  const code = translation.toLowerCase();
   await loadTranslation(translation);
-
-  const all = searchCache.get(code) ?? [];
+  const all = searchCache.get(translation.toLowerCase()) ?? [];
   const normalizedKeyword = keyword.replace(/\s/g, "");
   if (normalizedKeyword === "") return [];
 
@@ -256,17 +276,4 @@ export async function searchVerses(
     }
   }
   return results;
-}
-
-// 시트(책/장/절 선택)가 "장 개수 표"를 한 번만 통째로 받아가서, 그 이후 장 선택마다
-// 네트워크 왕복 없이 즉시 절 그리드를 그릴 수 있게 해준다. (안드로이드는 로컬 DB라 원래 이 지연이 없음)
-export async function getVerseCountTable(
-  translation: string,
-): Promise<Record<string, number>> {
-  const byChapter = await loadTranslation(translation);
-  const table: Record<string, number> = {};
-  for (const [key, rows] of byChapter.entries()) {
-    table[key] = rows.length;
-  }
-  return table;
 }

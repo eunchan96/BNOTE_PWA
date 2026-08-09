@@ -1,7 +1,7 @@
 import BibleTopBar from "@/components/BibleTopBar";
 import ScrollToVerse from "@/components/ScrollToVerse";
 import VerseList from "@/components/VerseList";
-import { getChapterVerses } from "@/lib/bible";
+import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
 import { getHighlightsForChapter } from "@/lib/highlights";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +43,7 @@ export default async function BibleChapterPage({
   }
 
   const secondaryVerses = secondary
-    ? await getChapterVerses(bookId, chapter, secondary)
+    ? await getChapterVersesRaw(bookId, chapter, secondary)
     : null;
 
   const unit = chapterUnit(bookId);

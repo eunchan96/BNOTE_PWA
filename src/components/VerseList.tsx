@@ -5,7 +5,7 @@ import {
   removeVerseHighlight,
   toggleBookmark,
 } from "@/lib/actions/bible-actions";
-import type { BibleVerseRow } from "@/lib/bible";
+import type { BibleVerseRow, RawVerseRow } from "@/lib/bible";
 import { HIGHLIGHT_PALETTE } from "@/lib/highlights";
 import { useState, useTransition } from "react";
 
@@ -23,7 +23,7 @@ export default function VerseList({
   chapter: number;
   translation: string;
   verses: BibleVerseRow[];
-  secondaryVerses: BibleVerseRow[] | null;
+  secondaryVerses: RawVerseRow[] | null;
   initialHighlights: Record<number, string>;
 }) {
   const [highlights, setHighlights] =
