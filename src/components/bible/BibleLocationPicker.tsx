@@ -1,6 +1,6 @@
 "use client";
 
-import BookChapterPickerSheet from "@/components/BookChapterPickerSheet";
+import BookChapterPickerSheet from "@/components/bible/BookChapterPickerSheet";
 import { useState } from "react";
 
 export default function BibleLocationPicker({

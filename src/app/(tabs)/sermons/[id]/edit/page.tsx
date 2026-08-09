@@ -1,5 +1,9 @@
-import SermonFormClient from "@/components/SermonFormClient";
-import { getCategories, getPreachers, getSermon } from "@/lib/actions/sermons";
+import SermonFormClient from "@/components/sermon/SermonFormClient";
+import {
+  getCategories,
+  getPreachers,
+  getSermon,
+} from "@/lib/actions/sermon/sermons";
 import { notFound } from "next/navigation";
 
 export default async function EditSermonPage({
@@ -15,5 +19,11 @@ export default async function EditSermonPage({
   ]);
   if (!sermon) notFound();
 
-  return <SermonFormClient preachers={preachers} categories={categories} existing={sermon} />;
+  return (
+    <SermonFormClient
+      preachers={preachers}
+      categories={categories}
+      existing={sermon}
+    />
+  );
 }

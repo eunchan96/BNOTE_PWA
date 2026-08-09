@@ -5,7 +5,7 @@ import {
   propagateWordMemo,
   saveWordMemo,
   type WordMemoRow,
-} from "@/lib/actions/word-memos";
+} from "@/lib/actions/bible/word-memos";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 

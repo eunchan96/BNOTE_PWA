@@ -1,8 +1,8 @@
-import "server-only";
+import { getChapterVerses } from "@/lib/bible/bible";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { getChapterVerses } from "@/lib/bible";
-import { getBook, chapterUnit } from "@/lib/bible-books";
+import "server-only";
 
 export type VerseRef = {
   bookId: number;

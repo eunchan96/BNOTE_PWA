@@ -1,8 +1,8 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
-import type { VerseMemoListRow } from "@/lib/actions/verse-memos";
-import type { WordMemoListRow } from "@/lib/actions/word-memos";
+import BackButton from "@/components/common/BackButton";
+import type { VerseMemoListRow } from "@/lib/actions/bible/verse-memos";
+import type { WordMemoListRow } from "@/lib/actions/bible/word-memos";
 import Link from "next/link";
 import { useState } from "react";
 

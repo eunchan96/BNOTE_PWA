@@ -1,10 +1,14 @@
 "use client";
 
-import type { SermonListRow } from "@/lib/actions/sermons";
+import type { SermonListRow } from "@/lib/actions/sermon/sermons";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function SermonListClient({ sermons }: { sermons: SermonListRow[] }) {
+export default function SermonListClient({
+  sermons,
+}: {
+  sermons: SermonListRow[];
+}) {
   const [sortMode, setSortMode] = useState<"date" | "added">("date");
 
   const sorted = [...sermons].sort((a, b) => {
@@ -31,7 +35,9 @@ export default function SermonListClient({ sermons }: { sermons: SermonListRow[]
       </div>
 
       {sorted.length === 0 && (
-        <p className="p-6 text-center text-text-secondary">아직 작성한 설교노트가 없어요.</p>
+        <p className="p-6 text-center text-text-secondary">
+          아직 작성한 설교노트가 없어요.
+        </p>
       )}
 
       <ul className="flex flex-1 flex-col overflow-y-auto">
@@ -49,9 +55,13 @@ export default function SermonListClient({ sermons }: { sermons: SermonListRow[]
                 {sermon.title}
               </span>
               <span className="flex shrink-0 flex-col items-end">
-                <span className="text-xs text-zinc-400">{sermon.sermonDate}</span>
+                <span className="text-xs text-zinc-400">
+                  {sermon.sermonDate}
+                </span>
                 {sermon.refLabel && (
-                  <span className="mt-0.5 text-xs text-brown-primary">{sermon.refLabel}</span>
+                  <span className="mt-0.5 text-xs text-brown-primary">
+                    {sermon.refLabel}
+                  </span>
                 )}
               </span>
             </Link>

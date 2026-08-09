@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { getChapterVerses } from "@/lib/bible";
-import { getBook } from "@/lib/bible-books";
+import { getChapterVerses } from "@/lib/bible/bible";
+import { getBook } from "@/lib/bible/bible-books";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -188,7 +188,7 @@ export async function getAllWordMemos(): Promise<WordMemoListRow[]> {
   return rows;
 }
 
-import { findVersesContainingExact } from "@/lib/bible";
+import { findVersesContainingExact } from "@/lib/bible/bible";
 
 const SHORT_NAMES = [
   "창", "출", "레", "민", "신", "수", "삿", "룻", "삼상", "삼하",

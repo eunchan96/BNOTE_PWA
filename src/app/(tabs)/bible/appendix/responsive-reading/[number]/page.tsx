@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { loadResponsiveReadings } from "@/lib/appendix";
+import BackButton from "@/components/common/BackButton";
+import { loadResponsiveReadings } from "@/lib/bible/appendix";
 import { notFound } from "next/navigation";
 
 export default async function ResponsiveReadingDetailPage({

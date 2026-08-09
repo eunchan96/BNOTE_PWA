@@ -1,12 +1,12 @@
 "use client";
 
-import { BIBLE_BOOKS } from "@/lib/bible-books";
+import { BIBLE_BOOKS } from "@/lib/bible/bible-books";
 import {
   addSearchHistory,
   clearSearchHistory,
   getSearchHistory,
   removeSearchHistory,
-} from "@/lib/search-history";
+} from "@/lib/bible/search-history";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 

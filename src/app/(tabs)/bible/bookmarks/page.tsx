@@ -1,5 +1,5 @@
-import BookmarkListClient from "@/components/BookmarkListClient";
-import { getBookmarkedVerses } from "@/lib/actions/bookmarks";
+import BookmarkListClient from "@/components/bible/BookmarkListClient";
+import { getBookmarkedVerses } from "@/lib/actions/bible/bookmarks";
 
 export default async function BookmarkListPage() {
   const rows = await getBookmarkedVerses();

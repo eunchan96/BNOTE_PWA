@@ -1,6 +1,6 @@
 "use client";
 
-import NamePickerSheet from "@/components/NamePickerSheet";
+import NamePickerSheet from "@/components/sermon/NamePickerSheet";
 import {
   createPreacher,
   createSermon,
@@ -9,8 +9,8 @@ import {
   type CategoryRow,
   type PreacherRow,
   type SermonDetail,
-} from "@/lib/actions/sermons";
-import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible-books";
+} from "@/lib/actions/sermon/sermons";
+import { BIBLE_BOOKS } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,10 +31,16 @@ export default function SermonFormClient({
   );
   const [memo, setMemo] = useState(existing?.memo ?? "");
   const [link, setLink] = useState(existing?.link ?? "");
-  const [preacherId, setPreacherId] = useState<number | null>(existing?.preacherId ?? null);
-  const [categoryId, setCategoryId] = useState<number | null>(existing?.categoryId ?? null);
+  const [preacherId, setPreacherId] = useState<number | null>(
+    existing?.preacherId ?? null,
+  );
+  const [categoryId, setCategoryId] = useState<number | null>(
+    existing?.categoryId ?? null,
+  );
   const [refs, setRefs] = useState<BibleRefInput[]>(existing?.refs ?? []);
-  const [photoUrls, setPhotoUrls] = useState<string[]>(existing?.photoUrls ?? []);
+  const [photoUrls, setPhotoUrls] = useState<string[]>(
+    existing?.photoUrls ?? [],
+  );
   const [preacherList, setPreacherList] = useState(preachers);
   const [showPreacherPicker, setShowPreacherPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -44,12 +50,21 @@ export default function SermonFormClient({
   function addRef() {
     setRefs((prev) => [
       ...prev,
-      { startBookId: 1, startChapter: 1, startVerse: 1, endBookId: 1, endChapter: 1, endVerse: 1 },
+      {
+        startBookId: 1,
+        startChapter: 1,
+        startVerse: 1,
+        endBookId: 1,
+        endChapter: 1,
+        endVerse: 1,
+      },
     ]);
   }
 
   function updateRef(index: number, patch: Partial<BibleRefInput>) {
-    setRefs((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+    setRefs((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, ...patch } : r)),
+    );
   }
 
   function removeRef(index: number) {
@@ -67,9 +82,13 @@ export default function SermonFormClient({
 
     for (const file of Array.from(files).slice(0, remaining)) {
       const path = `${crypto.randomUUID()}-${file.name}`;
-      const { error } = await supabase.storage.from("sermon-photos").upload(path, file);
+      const { error } = await supabase.storage
+        .from("sermon-photos")
+        .upload(path, file);
       if (!error) {
-        const { data } = supabase.storage.from("sermon-photos").getPublicUrl(path);
+        const { data } = supabase.storage
+          .from("sermon-photos")
+          .getPublicUrl(path);
         newUrls.push(data.publicUrl);
       }
     }
@@ -87,7 +106,16 @@ export default function SermonFormClient({
       return;
     }
     setIsSaving(true);
-    const input = { title, sermonDate, memo, link, preacherId, categoryId, refs, photoUrls };
+    const input = {
+      title,
+      sermonDate,
+      memo,
+      link,
+      preacherId,
+      categoryId,
+      refs,
+      photoUrls,
+    };
 
     if (existing) {
       await updateSermon(existing.id, input);
@@ -173,7 +201,10 @@ export default function SermonFormClient({
             </button>
           </div>
           {refs.map((ref, index) => (
-            <div key={index} className="mb-2 flex items-center gap-1.5 rounded-lg border border-divider p-2">
+            <div
+              key={index}
+              className="mb-2 flex items-center gap-1.5 rounded-lg border border-divider p-2"
+            >
               <select
                 value={ref.startBookId}
                 onChange={(e) => {
@@ -201,7 +232,9 @@ export default function SermonFormClient({
               <input
                 type="number"
                 value={ref.startVerse}
-                onChange={(e) => updateRef(index, { startVerse: Number(e.target.value) })}
+                onChange={(e) =>
+                  updateRef(index, { startVerse: Number(e.target.value) })
+                }
                 className="w-14 rounded border border-divider p-1.5 text-sm"
                 placeholder="시작절"
               />
@@ -209,7 +242,9 @@ export default function SermonFormClient({
               <input
                 type="number"
                 value={ref.endVerse}
-                onChange={(e) => updateRef(index, { endVerse: Number(e.target.value) })}
+                onChange={(e) =>
+                  updateRef(index, { endVerse: Number(e.target.value) })
+                }
                 className="w-14 rounded border border-divider p-1.5 text-sm"
                 placeholder="끝절"
               />
@@ -241,12 +276,18 @@ export default function SermonFormClient({
         />
 
         <div>
-          <p className="mb-2 text-sm font-bold text-text-secondary">사진 ({photoUrls.length}/5)</p>
+          <p className="mb-2 text-sm font-bold text-text-secondary">
+            사진 ({photoUrls.length}/5)
+          </p>
           <div className="flex flex-wrap gap-2">
             {photoUrls.map((url, index) => (
               <div key={url} className="relative h-20 w-20">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="h-full w-full rounded-lg object-cover" />
+                <img
+                  src={url}
+                  alt=""
+                  className="h-full w-full rounded-lg object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => removePhoto(index)}

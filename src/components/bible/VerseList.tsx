@@ -1,23 +1,23 @@
 "use client";
 
-import ScrapGroupPickerSheet from "@/components/ScrapGroupPickerSheet";
-import VerseMemoEditorSheet from "@/components/VerseMemoEditorSheet";
+import ScrapGroupPickerSheet from "@/components/bible/ScrapGroupPickerSheet";
+import VerseMemoEditorSheet from "@/components/bible/VerseMemoEditorSheet";
 import WordMemoSheet, {
   type WordMemoBoxInput,
-} from "@/components/WordMemoSheet";
-import { toggleBookmark } from "@/lib/actions/bible-actions";
+} from "@/components/bible/WordMemoSheet";
+import { toggleBookmark } from "@/lib/actions/bible/bible-actions";
 import {
   applyPartialHighlight,
   applyVerseHighlight,
   removeVerseHighlight,
   type HighlightRange,
   type HighlightRangeMap,
-} from "@/lib/actions/highlights";
-import { createScraps } from "@/lib/actions/scraps";
-import type { WordMemoRow } from "@/lib/actions/word-memos";
-import type { BibleVerseRow, RawVerseRow } from "@/lib/bible";
-import { chapterUnit, getBook } from "@/lib/bible-books";
-import { HIGHLIGHT_PALETTE } from "@/lib/highlight-colors";
+} from "@/lib/actions/bible/highlights";
+import { createScraps } from "@/lib/actions/bible/scraps";
+import type { WordMemoRow } from "@/lib/actions/bible/word-memos";
+import type { BibleVerseRow, RawVerseRow } from "@/lib/bible/bible";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { HIGHLIGHT_PALETTE } from "@/lib/bible/highlight-colors";
 import { Fragment, useEffect, useState, useTransition } from "react";
 
 type Mode =

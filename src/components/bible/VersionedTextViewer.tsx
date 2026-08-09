@@ -1,7 +1,7 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
-import type { VersionedTextContent } from "@/lib/appendix";
+import BackButton from "@/components/common/BackButton";
+import type { VersionedTextContent } from "@/lib/bible/appendix";
 import { useState } from "react";
 
 export default function VersionedTextViewer({

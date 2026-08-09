@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getGenealogyCharts } from "@/lib/genealogy";
+import BackButton from "@/components/common/BackButton";
+import { getGenealogyCharts } from "@/lib/bible/genealogy";
 import Link from "next/link";
 
 export default async function GenealogyListPage() {

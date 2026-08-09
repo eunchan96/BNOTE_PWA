@@ -1,7 +1,7 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
-import { searchHymns, type Hymn } from "@/lib/hymn-types";
+import BackButton from "@/components/common/BackButton";
+import { searchHymns, type Hymn } from "@/lib/bible/hymn-types";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

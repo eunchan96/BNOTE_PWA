@@ -1,5 +1,8 @@
-import ScrapDetailClient from "@/components/ScrapDetailClient";
-import { getScrapGroupName, getScrapsForGroup } from "@/lib/actions/scraps";
+import ScrapDetailClient from "@/components/bible/ScrapDetailClient";
+import {
+  getScrapGroupName,
+  getScrapsForGroup,
+} from "@/lib/actions/bible/scraps";
 import { notFound } from "next/navigation";
 
 export default async function ScrapDetailPage({
@@ -15,6 +18,10 @@ export default async function ScrapDetailPage({
   const scraps = await getScrapsForGroup(id);
 
   return (
-    <ScrapDetailClient groupId={id} groupName={groupName} initialScraps={scraps} />
+    <ScrapDetailClient
+      groupId={id}
+      groupName={groupName}
+      initialScraps={scraps}
+    />
   );
 }

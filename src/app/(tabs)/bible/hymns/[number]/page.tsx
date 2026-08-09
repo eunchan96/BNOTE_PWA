@@ -1,6 +1,6 @@
-import BackButton from "@/components/BackButton";
-import HymnYoutubeCard from "@/components/HymnYoutubeCard";
-import { getHymnByNumber } from "@/lib/hymn";
+import HymnYoutubeCard from "@/components/bible/HymnYoutubeCard";
+import BackButton from "@/components/common/BackButton";
+import { getHymnByNumber } from "@/lib/bible/hymn";
 import { notFound } from "next/navigation";
 
 export default async function HymnDetailPage({

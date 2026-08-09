@@ -1,7 +1,7 @@
 "use client";
 
-import { getVerseCounts } from "@/lib/actions/bible-queries";
-import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible-books";
+import { getVerseCounts } from "@/lib/actions/bible/bible-queries";
+import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";

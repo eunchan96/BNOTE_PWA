@@ -5,8 +5,8 @@ import {
   getVerseMemos,
   saveVerseMemo,
   type VerseMemoRow,
-} from "@/lib/actions/verse-memos";
-import { chapterUnit, getBook } from "@/lib/bible-books";
+} from "@/lib/actions/bible/verse-memos";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 

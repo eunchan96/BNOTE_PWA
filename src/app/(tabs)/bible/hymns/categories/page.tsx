@@ -1,5 +1,10 @@
-import BackButton from "@/components/BackButton";
-import { formatRangeLabel, getHymnsByCategory, getMajorCategories, getMinorCategories } from "@/lib/hymn";
+import BackButton from "@/components/common/BackButton";
+import {
+  formatRangeLabel,
+  getHymnsByCategory,
+  getMajorCategories,
+  getMinorCategories,
+} from "@/lib/bible/hymn";
 import Link from "next/link";
 
 export default async function HymnMajorCategoryPage() {
@@ -39,7 +44,9 @@ export default async function HymnMajorCategoryPage() {
           >
             <span className="text-sm text-text-primary">{major.name}</span>
             {rangeLabel && (
-              <span className="mt-1 text-xs text-text-secondary">{rangeLabel}</span>
+              <span className="mt-1 text-xs text-text-secondary">
+                {rangeLabel}
+              </span>
             )}
           </Link>
         ))}

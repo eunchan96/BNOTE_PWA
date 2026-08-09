@@ -1,6 +1,6 @@
 "use server";
 
-import { getChapterVerses, getVerseCountTable } from "@/lib/bible";
+import { getChapterVerses, getVerseCountTable } from "@/lib/bible/bible";
 
 export async function getVerseNumbers(
   bookId: number,

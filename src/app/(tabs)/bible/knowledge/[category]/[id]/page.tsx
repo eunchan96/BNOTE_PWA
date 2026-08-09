@@ -1,5 +1,8 @@
-import BackButton from "@/components/BackButton";
-import { getKnowledgeItem, isValidCategory } from "@/lib/knowledge-config";
+import BackButton from "@/components/common/BackButton";
+import {
+  getKnowledgeItem,
+  isValidCategory,
+} from "@/lib/bible/knowledge-config";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -25,9 +28,13 @@ export default async function KnowledgeDetailPage({
 
       <div className="flex flex-1 flex-col overflow-y-auto p-5">
         <p className="text-sm text-text-secondary">
-          {item.subtitle ? `${item.category} · ${item.subtitle}` : item.category}
+          {item.subtitle
+            ? `${item.category} · ${item.subtitle}`
+            : item.category}
         </p>
-        <h2 className="mt-1 text-xl font-bold text-text-primary">{item.name}</h2>
+        <h2 className="mt-1 text-xl font-bold text-text-primary">
+          {item.name}
+        </h2>
 
         {item.otherNames && (
           <p className="mt-1 text-sm text-text-secondary">

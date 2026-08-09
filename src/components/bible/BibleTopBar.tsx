@@ -1,8 +1,8 @@
 "use client";
 
-import BibleLocationPicker from "@/components/BibleLocationPicker";
-import BibleMenuDrawer from "@/components/BibleMenuDrawer";
-import TranslationPickerSheet from "@/components/TranslationPickerSheet";
+import BibleLocationPicker from "@/components/bible/BibleLocationPicker";
+import BibleMenuDrawer from "@/components/bible/BibleMenuDrawer";
+import TranslationPickerSheet from "@/components/bible/TranslationPickerSheet";
 import Link from "next/link";
 import { useState } from "react";
 

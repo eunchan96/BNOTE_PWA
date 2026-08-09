@@ -1,9 +1,9 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
-import { DeleteIconButton } from "@/components/ManageIconButtons";
-import { deleteScrap, type ScrapRow } from "@/lib/actions/scraps";
-import { getBook } from "@/lib/bible-books";
+import BackButton from "@/components/common/BackButton";
+import { DeleteIconButton } from "@/components/common/ManageIconButtons";
+import { deleteScrap, type ScrapRow } from "@/lib/actions/bible/scraps";
+import { getBook } from "@/lib/bible/bible-books";
 import Link from "next/link";
 import { useState } from "react";
 

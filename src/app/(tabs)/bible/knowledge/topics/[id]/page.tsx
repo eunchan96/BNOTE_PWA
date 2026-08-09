@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getTopic, resolveTopicVerses } from "@/lib/topics";
+import BackButton from "@/components/common/BackButton";
+import { getTopic, resolveTopicVerses } from "@/lib/bible/topics";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

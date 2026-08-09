@@ -1,6 +1,6 @@
 "use client";
 
-import { getBook, nextChapter, previousChapter } from "@/lib/bible-books";
+import { getBook, nextChapter, previousChapter } from "@/lib/bible/bible-books";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 

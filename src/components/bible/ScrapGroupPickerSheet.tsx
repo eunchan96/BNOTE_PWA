@@ -1,7 +1,11 @@
 "use client";
 
-import PromptDialog from "@/components/PromptDialog";
-import { createScrapGroup, getScrapGroups, type ScrapGroupRow } from "@/lib/actions/scraps";
+import PromptDialog from "@/components/common/PromptDialog";
+import {
+  createScrapGroup,
+  getScrapGroups,
+  type ScrapGroupRow,
+} from "@/lib/actions/bible/scraps";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -30,7 +34,9 @@ export default function ScrapGroupPickerSheet({
 
       <div className="relative flex max-h-[70vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white pb-4">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <h2 className="text-lg font-bold text-zinc-900">스크랩할 그룹 선택</h2>
+          <h2 className="text-lg font-bold text-zinc-900">
+            스크랩할 그룹 선택
+          </h2>
           <button
             type="button"
             onClick={() => setIsAdding(true)}

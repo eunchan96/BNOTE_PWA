@@ -1,6 +1,6 @@
-import BackButton from "@/components/BackButton";
-import { deleteSermon, getSermon } from "@/lib/actions/sermons";
-import { chapterUnit, getBook } from "@/lib/bible-books";
+import BackButton from "@/components/common/BackButton";
+import { deleteSermon, getSermon } from "@/lib/actions/sermon/sermons";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 

@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getGenealogyChart } from "@/lib/genealogy";
+import BackButton from "@/components/common/BackButton";
+import { getGenealogyChart } from "@/lib/bible/genealogy";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -29,12 +29,16 @@ export default async function GenealogyDetailPage({
         {chart.entries.map((entry, index) => (
           <div key={index}>
             <div className="rounded-lg bg-zinc-50 p-3.5">
-              <p className="text-base font-bold text-brown-primary">{entry.name}</p>
+              <p className="text-base font-bold text-brown-primary">
+                {entry.name}
+              </p>
               <p className="mt-0.5 text-[13px] text-text-secondary">
                 {entry.relation}
               </p>
               {entry.note && (
-                <p className="mt-1.5 text-[13px] text-text-primary">{entry.note}</p>
+                <p className="mt-1.5 text-[13px] text-text-primary">
+                  {entry.note}
+                </p>
               )}
             </div>
             {index !== chart.entries.length - 1 && (

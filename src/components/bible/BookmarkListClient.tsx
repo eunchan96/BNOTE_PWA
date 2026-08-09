@@ -1,11 +1,11 @@
 "use client";
 
-import { DeleteIconButton } from "@/components/ManageIconButtons";
+import { DeleteIconButton } from "@/components/common/ManageIconButtons";
 import {
   removeBookmark,
   type BookmarkedVerseRow,
-} from "@/lib/actions/bookmarks";
-import { getBook } from "@/lib/bible-books";
+} from "@/lib/actions/bible/bookmarks";
+import { getBook } from "@/lib/bible/bible-books";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 

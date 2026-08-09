@@ -1,4 +1,4 @@
-import { signInWithGoogle, signInWithKakao } from "@/lib/auth-actions";
+import { signInWithGoogle, signInWithKakao } from "@/lib/actions/auth-actions";
 import Link from "next/link";
 
 export default async function LoginPage({

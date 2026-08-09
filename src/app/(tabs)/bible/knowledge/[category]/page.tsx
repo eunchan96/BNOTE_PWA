@@ -1,10 +1,10 @@
-import KnowledgeListClient from "@/components/KnowledgeListClient";
+import KnowledgeListClient from "@/components/bible/KnowledgeListClient";
 import {
   getCategoryOrder,
   getCategoryTitle,
   getKnowledgeItems,
   isValidCategory,
-} from "@/lib/knowledge-config";
+} from "@/lib/bible/knowledge-config";
 import { notFound } from "next/navigation";
 
 export default async function KnowledgeListPage({

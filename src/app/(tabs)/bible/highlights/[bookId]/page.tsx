@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getHighlightsForBook } from "@/lib/actions/highlights";
+import BackButton from "@/components/common/BackButton";
+import { getHighlightsForBook } from "@/lib/actions/bible/highlights";
 import Link from "next/link";
 
 export default async function HighlightBookDetailPage({

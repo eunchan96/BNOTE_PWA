@@ -1,7 +1,7 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
-import type { KnowledgeItem } from "@/lib/knowledge-config";
+import BackButton from "@/components/common/BackButton";
+import type { KnowledgeItem } from "@/lib/bible/knowledge-config";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -56,7 +56,9 @@ export default function KnowledgeListClient({
       />
 
       {filtered.length === 0 && (
-        <p className="p-6 text-center text-text-secondary">검색 결과가 없어요</p>
+        <p className="p-6 text-center text-text-secondary">
+          검색 결과가 없어요
+        </p>
       )}
 
       <div className="flex flex-1 flex-col overflow-y-auto">

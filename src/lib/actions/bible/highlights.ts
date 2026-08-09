@@ -1,7 +1,7 @@
 "use server";
 
-import { getChapterVerses } from "@/lib/bible";
-import { chapterUnit, getBook } from "@/lib/bible-books";
+import { getChapterVerses } from "@/lib/bible/bible";
+import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";

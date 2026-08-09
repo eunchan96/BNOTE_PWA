@@ -1,7 +1,7 @@
 "use client";
 
-import { saveTranslationPreference } from "@/lib/actions/preferences";
-import { TRANSLATIONS } from "@/lib/translations";
+import { saveTranslationPreference } from "@/lib/actions/bible/preferences";
+import { TRANSLATIONS } from "@/lib/bible/translations";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";

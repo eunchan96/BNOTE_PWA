@@ -1,4 +1,4 @@
-import { getChapterVerses } from "@/lib/bible";
+import { getChapterVerses } from "@/lib/bible/bible";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(

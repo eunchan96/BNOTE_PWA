@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -88,7 +88,7 @@ export async function getSermons(): Promise<SermonListRow[]> {
 
   if (error) throw error;
 
-  const { getBook, chapterUnit } = await import("@/lib/bible-books");
+  const { getBook, chapterUnit } = await import("@/lib/bible/bible-books");
 
   return (data ?? []).map((s) => {
     const refs = (s.sermon_bible_ref ?? []) as BibleRefInput[];

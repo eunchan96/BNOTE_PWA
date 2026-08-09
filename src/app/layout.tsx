@@ -1,4 +1,4 @@
-import BottomNav from "@/components/BottomNav";
+import BottomNav from "@/components/common/BottomNav";
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import { Suspense } from "react";

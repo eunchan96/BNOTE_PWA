@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getTopics } from "@/lib/topics";
+import BackButton from "@/components/common/BackButton";
+import { getTopics } from "@/lib/bible/topics";
 import Link from "next/link";
 
 export default async function TopicListPage() {

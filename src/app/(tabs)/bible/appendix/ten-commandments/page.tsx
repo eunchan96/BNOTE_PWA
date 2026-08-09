@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { loadTenCommandments } from "@/lib/appendix";
+import BackButton from "@/components/common/BackButton";
+import { loadTenCommandments } from "@/lib/bible/appendix";
 
 export default async function TenCommandmentsPage() {
   const content = await loadTenCommandments();

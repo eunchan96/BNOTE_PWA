@@ -1,6 +1,6 @@
 "use server";
 
-import { getChapterVersesRaw, type RawVerseRow } from "@/lib/bible";
+import { getChapterVersesRaw, type RawVerseRow } from "@/lib/bible/bible";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";

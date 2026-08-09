@@ -1,6 +1,6 @@
 "use client";
 
-import { extractYoutubeId } from "@/lib/hymn-types";
+import { extractYoutubeId } from "@/lib/bible/hymn-types";
 import { useState } from "react";
 
 export default function HymnYoutubeCard({

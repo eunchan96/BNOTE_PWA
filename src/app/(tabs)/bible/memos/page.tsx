@@ -1,6 +1,6 @@
-import MemoListClient from "@/components/MemoListClient";
-import { getAllVerseMemos } from "@/lib/actions/verse-memos";
-import { getAllWordMemos } from "@/lib/actions/word-memos";
+import MemoListClient from "@/components/bible/MemoListClient";
+import { getAllVerseMemos } from "@/lib/actions/bible/verse-memos";
+import { getAllWordMemos } from "@/lib/actions/bible/word-memos";
 
 export default async function MemoListPage() {
   const [verseMemos, wordMemos] = await Promise.all([

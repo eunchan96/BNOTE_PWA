@@ -1,10 +1,10 @@
-import type { Hymn, HymnCategory, HymnData } from "@/lib/hymn-types";
+import type { Hymn, HymnCategory, HymnData } from "@/lib/bible/hymn-types";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import "server-only";
 
-export { extractYoutubeId, formatRangeLabel, searchHymns } from "@/lib/hymn-types";
-export type { Hymn, HymnCategory } from "@/lib/hymn-types";
+export { extractYoutubeId, formatRangeLabel, searchHymns } from "@/lib/bible/hymn-types";
+export type { Hymn, HymnCategory } from "@/lib/bible/hymn-types";
 
 let cache: HymnData | null = null;
 

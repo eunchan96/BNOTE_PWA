@@ -1,9 +1,9 @@
 "use server";
 
+import { getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
-import { getBook } from "@/lib/bible-books";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 async function requireUser() {
   const supabase = await createClient();

@@ -1,18 +1,18 @@
 "use client";
 
-import BackButton from "@/components/BackButton";
+import BackButton from "@/components/common/BackButton";
 import {
   DeleteIconButton,
   EditIconButton,
-} from "@/components/ManageIconButtons";
-import PromptDialog from "@/components/PromptDialog";
+} from "@/components/common/ManageIconButtons";
+import PromptDialog from "@/components/common/PromptDialog";
 import {
   createScrapGroup,
   deleteScrapGroup,
   getScrapGroups,
   renameScrapGroup,
   type ScrapGroupRow,
-} from "@/lib/actions/scraps";
+} from "@/lib/actions/bible/scraps";
 import Link from "next/link";
 import { useState } from "react";
 

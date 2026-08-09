@@ -1,5 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { getTimelineEvents } from "@/lib/timeline";
+import BackButton from "@/components/common/BackButton";
+import { getTimelineEvents } from "@/lib/bible/timeline";
 import Link from "next/link";
 
 export default async function TimelinePage() {
