@@ -1,6 +1,7 @@
 "use client";
 
 import BackButton from "@/components/BackButton";
+import { DeleteIconButton } from "@/components/ManageIconButtons";
 import { deleteScrap, type ScrapRow } from "@/lib/actions/scraps";
 import { getBook } from "@/lib/bible-books";
 import Link from "next/link";
@@ -30,7 +31,9 @@ export default function ScrapDetailClient({
       scrap.startVerse === scrap.endVerse
         ? `(${book?.name} ${scrap.chapter}:${scrap.startVerse})`
         : `(${book?.name} ${scrap.chapter}:${scrap.startVerse}~${scrap.endVerse})`;
-    navigator.clipboard.writeText(`${ref} ${scrap.verseText.replace(/\n/g, " ")}`);
+    navigator.clipboard.writeText(
+      `${ref} ${scrap.verseText.replace(/\n/g, " ")}`,
+    );
   }
 
   return (
@@ -66,10 +69,15 @@ export default function ScrapDetailClient({
               : `${book?.name} ${scrap.chapter}:${scrap.startVerse}~${scrap.endVerse}`;
 
           return (
-            <li key={scrap.id} className="flex items-start gap-2 border-b border-divider px-4 py-3">
+            <li
+              key={scrap.id}
+              className="flex items-start gap-2 border-b border-divider px-4 py-3"
+            >
               {isEditMode ? (
                 <div className="flex-1">
-                  <p className="text-[13px] font-bold text-brown-primary">{ref}</p>
+                  <p className="text-[13px] font-bold text-brown-primary">
+                    {ref}
+                  </p>
                   <p className="mt-1 whitespace-pre-line text-[15px] text-text-primary">
                     {scrap.verseText}
                   </p>
@@ -79,7 +87,9 @@ export default function ScrapDetailClient({
                   href={`/bible/${scrap.bookId}/${scrap.chapter}?verse=${scrap.startVerse}`}
                   className="flex-1 cursor-pointer"
                 >
-                  <p className="text-[13px] font-bold text-brown-primary">{ref}</p>
+                  <p className="text-[13px] font-bold text-brown-primary">
+                    {ref}
+                  </p>
                   <p className="mt-1 whitespace-pre-line text-[15px] text-text-primary">
                     {scrap.verseText}
                   </p>
@@ -87,13 +97,7 @@ export default function ScrapDetailClient({
               )}
 
               {isEditMode ? (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(scrap)}
-                  className="mt-0.5 shrink-0 cursor-pointer text-sm text-red-500"
-                >
-                  삭제
-                </button>
+                <DeleteIconButton onClick={() => handleDelete(scrap)} />
               ) : (
                 <button
                   type="button"
@@ -101,7 +105,12 @@ export default function ScrapDetailClient({
                   aria-label="복사"
                   className="mt-0.5 shrink-0 cursor-pointer text-zinc-400"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
                     <path d="M16,1H4C2.9,1 2,1.9 2,3v14h2V3h12V1zM19,5H8C6.9,5 6,5.9 6,7v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7C21,5.9 20.1,5 19,5zM19,21H8V7h11V21z" />
                   </svg>
                 </button>

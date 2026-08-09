@@ -1,6 +1,10 @@
 "use client";
 
 import BackButton from "@/components/BackButton";
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/components/ManageIconButtons";
 import PromptDialog from "@/components/PromptDialog";
 import {
   createScrapGroup,
@@ -27,7 +31,12 @@ export default function ScrapGroupListClient({
   }
 
   async function handleDelete(group: ScrapGroupRow) {
-    if (!confirm(`'${group.name}' 그룹과 그 안의 스크랩이 전부 삭제돼요. 계속할까요?`)) return;
+    if (
+      !confirm(
+        `'${group.name}' 그룹과 그 안의 스크랩이 전부 삭제돼요. 계속할까요?`,
+      )
+    )
+      return;
     await deleteScrapGroup(group.id);
     refresh();
   }
@@ -66,31 +75,21 @@ export default function ScrapGroupListClient({
         {groups.map((group) => (
           <li key={group.id} className="border-b border-divider">
             {isManageMode ? (
-              <div className="flex items-center gap-2 px-4 py-3.5">
+              <div className="flex items-center gap-1 px-4 py-2">
                 <span className="flex-1 text-[15px] text-text-primary">
                   {group.name}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setRenaming(group)}
-                  className="cursor-pointer px-2 text-sm text-brown-primary"
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(group)}
-                  className="cursor-pointer px-2 text-sm text-red-500"
-                >
-                  삭제
-                </button>
+                <EditIconButton onClick={() => setRenaming(group)} />
+                <DeleteIconButton onClick={() => handleDelete(group)} />
               </div>
             ) : (
               <Link
                 href={`/bible/scraps/${group.id}`}
                 className="flex cursor-pointer items-center justify-between px-4 py-3.5"
               >
-                <span className="text-[15px] text-text-primary">{group.name}</span>
+                <span className="text-[15px] text-text-primary">
+                  {group.name}
+                </span>
                 <span className="text-sm text-zinc-400">{group.count}개</span>
               </Link>
             )}

@@ -131,7 +131,10 @@ export default function VerseList({
         groupId,
         bookId,
         chapter,
-        targets.map((v) => ({ verse: v.verse, text: v.text })),
+        targets.map((v) => ({
+          verse: v.verse,
+          text: v.text2 ? `${v.text}\n${v.text2}` : v.text,
+        })),
       );
       setShowScrapPicker(false);
       clearSelection();
