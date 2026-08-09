@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+const PROTECTED_PREFIXES = ['/sermons', '/mypage'];
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -23,7 +25,22 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix),
+  );
+
+  if (isProtected && !user) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set(
+      'next',
+      request.nextUrl.pathname + request.nextUrl.search,
+    );
+    return NextResponse.redirect(loginUrl);
+  }
 
   return response;
 }
