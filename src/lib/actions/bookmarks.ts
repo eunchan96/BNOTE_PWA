@@ -1,6 +1,6 @@
 "use server";
 
-import { getChapterVerses, type BibleVerseRow } from "@/lib/bible";
+import { getChapterVersesRaw, type RawVerseRow } from "@/lib/bible";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -38,23 +38,27 @@ export async function getBookmarkedVerses(): Promise<BookmarkedVerseRow[]> {
   if (error) throw error;
 
   const rows: BookmarkedVerseRow[] = [];
-  const chapterCache = new Map<string, BibleVerseRow[]>();
+  const chapterCache = new Map<string, RawVerseRow[]>();
 
   for (const b of data ?? []) {
     const key = `${b.book_id}-${b.chapter}`;
     let verses = chapterCache.get(key);
     if (!verses) {
-      // 목록은 안드로이드와 동일하게 항상 개역개정(NKRV) 텍스트로 보여준다.
-      verses = await getChapterVerses(b.book_id, b.chapter, "NKRV");
+      // 목록은 안드로이드와 동일하게 항상 개역개정(NKRV)으로 보여주되,
+      // text2가 있으면(창 35:22 같은 절) 이어붙여서 전체 내용을 보여준다.
+      verses = await getChapterVersesRaw(b.book_id, b.chapter, "NKRV");
       chapterCache.set(key, verses);
     }
     const verseData = verses.find((v) => v.verse === b.verse);
     if (verseData) {
+      const fullText = verseData.text2
+        ? `${verseData.text} ${verseData.text2}`
+        : verseData.text;
       rows.push({
         bookId: b.book_id,
         chapter: b.chapter,
         verse: b.verse,
-        text: verseData.text,
+        text: fullText,
       });
     }
   }

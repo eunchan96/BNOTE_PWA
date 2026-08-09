@@ -1,4 +1,5 @@
 import { signInWithGoogle, signInWithKakao } from "@/lib/auth-actions";
+import Link from "next/link";
 
 export default async function LoginPage({
   searchParams,
@@ -10,6 +11,18 @@ export default async function LoginPage({
 
   return (
     <div className="flex flex-1 flex-col bg-brown-primary">
+      <div className="flex h-14 items-center px-1">
+        <Link
+          href="/bible"
+          aria-label="뒤로가기"
+          className="flex h-10 w-10 items-center justify-center"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M15.41,7.41L14,6l-6,6 6,6 1.41,-1.41L10.83,12z" />
+          </svg>
+        </Link>
+      </div>
+
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
         <BookIcon />
         <h1 className="text-2xl font-bold text-white">BNOTE</h1>
