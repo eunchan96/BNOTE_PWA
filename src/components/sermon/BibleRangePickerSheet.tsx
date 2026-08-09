@@ -218,21 +218,39 @@ export default function BibleRangePickerSheet({
 
         <div className="h-[420px] overflow-y-auto p-2">
           {step === "book" && !showEndUI && (
-            <div className="grid grid-cols-4 gap-2 p-1">
-              {BIBLE_BOOKS.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => pickBook(b.id)}
-                  className={`cursor-pointer rounded-lg px-1 py-3 text-center text-[13px] ${
-                    b.id === bookId
-                      ? "bg-brown-primary text-white"
-                      : "bg-zinc-100 text-zinc-800"
-                  }`}
-                >
-                  {b.name}
-                </button>
-              ))}
+            <div className="flex flex-col gap-2 p-1">
+              <div className="grid grid-cols-4 gap-2">
+                {BIBLE_BOOKS.slice(0, 39).map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => pickBook(b.id)}
+                    className={`cursor-pointer rounded-lg px-1 py-3 text-center text-[13px] ${
+                      b.id === bookId
+                        ? "bg-brown-primary text-white"
+                        : "bg-zinc-100 text-zinc-800"
+                    }`}
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {BIBLE_BOOKS.slice(39).map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => pickBook(b.id)}
+                    className={`cursor-pointer rounded-lg px-1 py-3 text-center text-[13px] ${
+                      b.id === bookId
+                        ? "bg-brown-primary text-white"
+                        : "bg-zinc-100 text-zinc-800"
+                    }`}
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

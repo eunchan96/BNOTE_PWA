@@ -8,17 +8,6 @@ import { createPortal } from "react-dom";
 
 type Step = "book" | "chapter" | "verse";
 
-function bookGroups(): number[][] {
-  const groups: number[][] = [];
-  for (let i = 1; i <= 39; i += 4) {
-    groups.push(BIBLE_BOOKS.slice(i - 1, Math.min(i + 3, 39)).map((b) => b.id));
-  }
-  for (let i = 40; i <= 66; i += 4) {
-    groups.push(BIBLE_BOOKS.slice(i - 1, Math.min(i + 3, 66)).map((b) => b.id));
-  }
-  return groups;
-}
-
 export default function BookChapterPickerSheet({
   onClose,
   initialBookId,
@@ -120,31 +109,44 @@ export default function BookChapterPickerSheet({
         <div className="h-[420px] overflow-y-auto p-2">
           {step === "book" && (
             <div className="flex flex-col gap-2 p-1">
-              {bookGroups().map((group, i) => (
-                <div key={i} className="flex gap-2">
-                  {group.map((bookId) => {
-                    const book = getBook(bookId)!;
-                    const isSelected = bookId === selectedBookId;
-                    return (
-                      <button
-                        key={bookId}
-                        type="button"
-                        onClick={() => pickBook(bookId)}
-                        className={`flex-1 rounded-lg px-1 py-4 text-center text-[13px] ${
-                          isSelected
-                            ? "bg-brown-primary text-white"
-                            : "bg-zinc-100 text-zinc-800"
-                        } cursor-pointer`}
-                      >
-                        {book.name}
-                      </button>
-                    );
-                  })}
-                  {Array.from({ length: 4 - group.length }).map((_, i) => (
-                    <div key={`spacer-${i}`} className="flex-1" />
-                  ))}
-                </div>
-              ))}
+              <div className="grid grid-cols-4 gap-2">
+                {BIBLE_BOOKS.slice(0, 39).map((book) => {
+                  const isSelected = book.id === selectedBookId;
+                  return (
+                    <button
+                      key={book.id}
+                      type="button"
+                      onClick={() => pickBook(book.id)}
+                      className={`cursor-pointer rounded-lg px-1 py-4 text-center text-[13px] ${
+                        isSelected
+                          ? "bg-brown-primary text-white"
+                          : "bg-zinc-100 text-zinc-800"
+                      }`}
+                    >
+                      {book.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {BIBLE_BOOKS.slice(39).map((book) => {
+                  const isSelected = book.id === selectedBookId;
+                  return (
+                    <button
+                      key={book.id}
+                      type="button"
+                      onClick={() => pickBook(book.id)}
+                      className={`cursor-pointer rounded-lg px-1 py-4 text-center text-[13px] ${
+                        isSelected
+                          ? "bg-brown-primary text-white"
+                          : "bg-zinc-100 text-zinc-800"
+                      }`}
+                    >
+                      {book.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
