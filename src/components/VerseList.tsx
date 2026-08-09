@@ -1,6 +1,7 @@
 "use client";
 
 import ScrapGroupPickerSheet from "@/components/ScrapGroupPickerSheet";
+import VerseMemoEditorSheet from "@/components/VerseMemoEditorSheet";
 import {
   applyVerseHighlight,
   removeVerseHighlight,
@@ -37,6 +38,7 @@ export default function VerseList({
   verses,
   secondaryVerses,
   initialHighlights,
+  initialMemoVerses,
 }: {
   bookId: number;
   chapter: number;
@@ -44,12 +46,17 @@ export default function VerseList({
   verses: BibleVerseRow[];
   secondaryVerses: RawVerseRow[] | null;
   initialHighlights: Record<number, string>;
+  initialMemoVerses: number[];
 }) {
   const [highlights, setHighlights] =
     useState<Record<number, string>>(initialHighlights);
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
   const [mode, setMode] = useState<Mode>("none");
   const [showScrapPicker, setShowScrapPicker] = useState(false);
+  const [memoVerses, setMemoVerses] = useState<Set<number>>(
+    new Set(initialMemoVerses),
+  );
+  const [memoEditorVerse, setMemoEditorVerse] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function toggleVerse(verse: number) {
@@ -68,6 +75,15 @@ export default function VerseList({
       }
       return next;
     });
+  }
+
+  function handleNumberClick(verseNum: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (memoVerses.has(verseNum)) {
+      setMemoEditorVerse(verseNum);
+    } else {
+      toggleVerse(verseNum);
+    }
   }
 
   function clearSelection() {
@@ -185,9 +201,11 @@ export default function VerseList({
               id={`verse-${verse.verse}`}
               className="scroll-mt-14"
             >
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleVerse(verse.verse)}
+                onKeyDown={(e) => e.key === "Enter" && toggleVerse(verse.verse)}
                 className={`block w-full cursor-pointer text-left ${
                   isSelected ? "bg-brown-primary/10" : ""
                 }`}
@@ -205,15 +223,19 @@ export default function VerseList({
                 )}
 
                 <div
-                  className={`flex gap-1 py-1 pb-2 pl-1.5 pr-3 ${
-                    extraTopSpacing ? "pt-3" : "pt-1"
-                  }`}
+                  className={`flex gap-1 py-1 pb-2 pl-1.5 pr-3 ${extraTopSpacing ? "pt-3" : "pt-1"}`}
                 >
-                  <span
-                    className={`mt-0.5 ${numberColumnWidth} shrink-0 text-center font-bold text-text-secondary`}
+                  <button
+                    type="button"
+                    onClick={(e) => handleNumberClick(verse.verse, e)}
+                    className={`${numberColumnWidth} shrink-0 cursor-pointer self-start text-center font-bold ${
+                      memoVerses.has(verse.verse)
+                        ? "text-brown-primary underline"
+                        : "text-text-secondary"
+                    }`}
                   >
                     {verse.verse}
-                  </span>
+                  </button>
                   <div className="flex-1">
                     <p className="text-base leading-relaxed text-text-primary">
                       <span
@@ -260,7 +282,7 @@ export default function VerseList({
                     </div>
                   </>
                 )}
-              </button>
+              </div>
             </li>
           );
         })}
@@ -275,11 +297,22 @@ export default function VerseList({
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
             {selectedVerses.size === 1 && (
-              <ToolbarButton
-                label="북마크"
-                onClick={handleBookmark}
-                disabled={isPending}
-              />
+              <>
+                <ToolbarButton
+                  label="북마크"
+                  onClick={handleBookmark}
+                  disabled={isPending}
+                />
+                <ToolbarButton
+                  label="메모"
+                  onClick={() => {
+                    const verse = [...selectedVerses][0];
+                    setMemoEditorVerse(verse);
+                    clearSelection();
+                  }}
+                  disabled={isPending}
+                />
+              </>
             )}
             <ToolbarButton
               label="하이라이트"
@@ -332,6 +365,21 @@ export default function VerseList({
         <ScrapGroupPickerSheet
           onSelect={handleScrapGroupSelected}
           onClose={() => setShowScrapPicker(false)}
+        />
+      )}
+
+      {memoEditorVerse !== null && (
+        <VerseMemoEditorSheet
+          bookId={bookId}
+          chapter={chapter}
+          verse={memoEditorVerse}
+          verseText={
+            verses.find((v) => v.verse === memoEditorVerse)?.text ?? ""
+          }
+          onClose={() => setMemoEditorVerse(null)}
+          onChanged={() =>
+            setMemoVerses((prev) => new Set(prev).add(memoEditorVerse))
+          }
         />
       )}
     </>

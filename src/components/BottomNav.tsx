@@ -21,7 +21,8 @@ export default function BottomNav() {
     pathname === "/bible/search" ||
     pathname === "/bible/bookmarks" ||
     pathname.startsWith("/bible/highlights") ||
-    pathname.startsWith("/bible/scraps")
+    pathname.startsWith("/bible/scraps") ||
+    pathname === "/bible/memos"
   ) {
     return null;
   }

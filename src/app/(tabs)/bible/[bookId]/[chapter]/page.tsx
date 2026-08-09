@@ -1,6 +1,7 @@
 import BibleTopBar from "@/components/BibleTopBar";
 import ScrollToVerse from "@/components/ScrollToVerse";
 import VerseList from "@/components/VerseList";
+import { getMemoVerseNumbers } from "@/lib/actions/verse-memos";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible";
 import { chapterUnit, getBook } from "@/lib/bible-books";
 import { getHighlightsForChapter } from "@/lib/highlights";
@@ -63,6 +64,9 @@ export default async function BibleChapterPage({
   const initialHighlights = user
     ? await getHighlightsForChapter(supabase, translation, bookId, chapter)
     : {};
+  const initialMemoVerses = user
+    ? await getMemoVerseNumbers(bookId, chapter)
+    : [];
 
   return (
     <div className="flex flex-col">
@@ -83,6 +87,7 @@ export default async function BibleChapterPage({
           verses={verses}
           secondaryVerses={secondaryVerses}
           initialHighlights={initialHighlights}
+          initialMemoVerses={initialMemoVerses}
         />
       </div>
     </div>
