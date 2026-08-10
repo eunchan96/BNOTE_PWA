@@ -15,7 +15,7 @@ import {
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function SermonFormClient({
   preachers,
@@ -55,6 +55,36 @@ export default function SermonFormClient({
     index: number | null;
   } | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const memoRef = useRef<HTMLTextAreaElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+
+  function resizeMemo() {
+    const el = memoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  useEffect(() => {
+    function updateMinHeight() {
+      const memoEl = memoRef.current;
+      const footerEl = footerRef.current;
+      if (!memoEl || !footerEl) return;
+      const top = memoEl.getBoundingClientRect().top;
+      const footerHeight = footerEl.getBoundingClientRect().height;
+      const available = window.innerHeight - top - footerHeight - 16;
+      memoEl.style.minHeight = `${Math.max(available, 150)}px`;
+      resizeMemo();
+    }
+
+    updateMinHeight();
+    window.addEventListener("resize", updateMinHeight);
+    return () => window.removeEventListener("resize", updateMinHeight);
+  }, []);
+
+  useEffect(() => {
+    resizeMemo();
+  }, [memo]);
 
   function refLabel(ref: BibleRefInput) {
     const book = getBook(ref.startBookId);
@@ -181,7 +211,7 @@ export default function SermonFormClient({
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
   return (
-    <div className="flex h-[calc(100dvh-52px)] flex-col bg-surface-background">
+    <div className="flex flex-1 flex-col bg-surface-background">
       <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center bg-brown-primary pl-1">
         <button
           type="button"
@@ -205,7 +235,7 @@ export default function SermonFormClient({
         </button>
       </header>
 
-      <div className="flex flex-1 flex-col overflow-y-auto p-4">
+      <div className="flex flex-col p-4">
         <FormRow label="제목">
           <input
             type="text"
@@ -271,12 +301,14 @@ export default function SermonFormClient({
         </FormRow>
 
         {/* 메모: 안드로이드 원본 그대로 넉넉한 높이 + 우하단 서식 도구 오버레이(현재는 스텁, 리치텍스트 미지원) */}
-        <div className="relative mt-3 flex flex-1 flex-col rounded-lg bg-input-background">
+        <div className="relative mt-3 flex flex-col rounded-lg bg-input-background">
           <textarea
+            ref={memoRef}
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
+            onInput={resizeMemo}
             placeholder="메모"
-            className="min-h-[160px] flex-1 resize-none bg-transparent p-3 pb-11 text-base outline-none"
+            className="w-full resize-none overflow-hidden bg-transparent p-3 pb-11 text-base outline-none"
           />
           <div className="absolute bottom-1.5 right-1.5 flex overflow-hidden rounded-xl bg-white shadow-sm">
             <span className="cursor-not-allowed px-2 py-2 text-[13px] text-text-secondary opacity-50">
@@ -291,75 +323,77 @@ export default function SermonFormClient({
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-input-background px-3 py-3 text-[15px] text-text-primary">
-            {`+ 사진 추가 (${existingPhotoUrls.length + pendingPhotos.length}/5)`}
+        <div ref={footerRef}>
+          <div className="mt-3 flex gap-2">
+            <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg bg-input-background px-3 py-3 text-[15px] text-text-primary">
+              {`+ 사진 추가 (${existingPhotoUrls.length + pendingPhotos.length}/5)`}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handlePhotoSelect(e.target.files)}
+                className="hidden"
+              />
+            </label>
             <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => handlePhotoSelect(e.target.files)}
-              className="hidden"
+              type="text"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="링크 추가 (선택)"
+              className="flex-1 rounded-lg bg-input-background px-3 py-3 text-[15px]"
             />
-          </label>
-          <input
-            type="text"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="링크 추가 (선택)"
-            className="flex-1 rounded-lg bg-input-background px-3 py-3 text-[15px]"
-          />
-        </div>
-
-        {(existingPhotoUrls.length > 0 || pendingPhotos.length > 0) && (
-          <div className="mt-3 flex gap-2 overflow-x-auto">
-            {existingPhotoUrls.map((url, index) => (
-              <div key={url} className="relative h-20 w-20 shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt=""
-                  className="h-full w-full rounded-lg object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeExistingPhoto(index)}
-                  aria-label="삭제"
-                  className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-            {pendingPhotos.map((p, index) => (
-              <div key={p.previewUrl} className="relative h-20 w-20 shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={p.previewUrl}
-                  alt=""
-                  className="h-full w-full rounded-lg object-cover opacity-80"
-                />
-                <button
-                  type="button"
-                  onClick={() => removePendingPhoto(index)}
-                  aria-label="삭제"
-                  className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
           </div>
-        )}
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSaving}
-          className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] text-white disabled:opacity-60"
-        >
-          {isSaving ? "저장 중..." : "저장"}
-        </button>
+          {(existingPhotoUrls.length > 0 || pendingPhotos.length > 0) && (
+            <div className="mt-3 flex gap-2 overflow-x-auto">
+              {existingPhotoUrls.map((url, index) => (
+                <div key={url} className="relative h-20 w-20 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-full w-full rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingPhoto(index)}
+                    aria-label="삭제"
+                    className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {pendingPhotos.map((p, index) => (
+                <div key={p.previewUrl} className="relative h-20 w-20 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.previewUrl}
+                    alt=""
+                    className="h-full w-full rounded-lg object-cover opacity-80"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePendingPhoto(index)}
+                    aria-label="삭제"
+                    className="absolute -right-1 -top-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-zinc-800 text-xs text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] text-white disabled:opacity-60"
+          >
+            {isSaving ? "저장 중..." : "저장"}
+          </button>
+        </div>
       </div>
 
       {showPreacherPicker && (
