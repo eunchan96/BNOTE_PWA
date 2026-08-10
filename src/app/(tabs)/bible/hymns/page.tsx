@@ -4,9 +4,9 @@ import BackButton from "@/components/common/BackButton";
 import { searchHymns, type Hymn } from "@/lib/bible/hymn-types";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function HymnListPage() {
+function HymnListInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryId = searchParams.get("categoryId");
@@ -69,5 +69,13 @@ export default function HymnListPage() {
         ))}
       </ul>
     </div>
+  );
+}
+
+export default function HymnListPage() {
+  return (
+    <Suspense fallback={null}>
+      <HymnListInner />
+    </Suspense>
   );
 }
