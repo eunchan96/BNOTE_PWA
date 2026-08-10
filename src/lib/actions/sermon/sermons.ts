@@ -286,7 +286,22 @@ async function saveRefsAndPhotos(
 
 export async function deleteSermon(id: number) {
   const { supabase, user } = await requireUser();
+
+  const { data: photos } = await supabase
+    .from("sermon_photo")
+    .select("image_url")
+    .eq("sermon_id", id);
+
   const { error } = await supabase.from("sermon").delete().eq("id", id).eq("member_id", user.id);
   if (error) throw error;
+
+  const paths = (photos ?? [])
+    .map((p) => p.image_url.split("/sermon-photos/")[1])
+    .filter((p): p is string => Boolean(p));
+
+  if (paths.length > 0) {
+    await supabase.storage.from("sermon-photos").remove(paths);
+  }
+
   revalidatePath("/sermons");
 }

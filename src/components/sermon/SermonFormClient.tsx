@@ -43,6 +43,7 @@ export default function SermonFormClient({
   const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>(
     existing?.photoUrls ?? [],
   );
+  const [removedExistingUrls, setRemovedExistingUrls] = useState<string[]>([]);
   const [pendingPhotos, setPendingPhotos] = useState<
     { file: File; previewUrl: string }[]
   >([]);
@@ -53,7 +54,6 @@ export default function SermonFormClient({
   const [rangePicker, setRangePicker] = useState<{
     index: number | null;
   } | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   function refLabel(ref: BibleRefInput) {
@@ -100,6 +100,8 @@ export default function SermonFormClient({
   }
 
   function removeExistingPhoto(index: number) {
+    const url = existingPhotoUrls[index];
+    setRemovedExistingUrls((prev) => [...prev, url]);
     setExistingPhotoUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
@@ -154,13 +156,24 @@ export default function SermonFormClient({
       photoUrls: finalPhotoUrls,
     };
 
+    let newId: number | null = null;
     if (existing) {
       await updateSermon(existing.id, input);
-      router.push(`/sermons/${existing.id}`);
     } else {
-      const id = await createSermon(input);
-      router.push(`/sermons/${id}`);
+      newId = await createSermon(input);
     }
+
+    // DB 저장이 끝난 뒤에 실제로 삭제된 기존 사진들을 Storage에서 정리한다.
+    if (removedExistingUrls.length > 0) {
+      const paths = removedExistingUrls
+        .map((url) => url.split("/sermon-photos/")[1])
+        .filter((p): p is string => Boolean(p));
+      if (paths.length > 0) {
+        await supabase.storage.from("sermon-photos").remove(paths);
+      }
+    }
+
+    router.push(existing ? `/sermons/${existing.id}` : `/sermons/${newId}`);
   }
 
   const selectedPreacherName =
