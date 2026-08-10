@@ -57,24 +57,36 @@ export default function SermonFormClient({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const memoRef = useRef<HTMLTextAreaElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
+  const minMemoHeightRef = useRef<number>(150);
 
   function resizeMemo() {
     const el = memoRef.current;
-    const footerEl = footerRef.current;
-    if (!el || !footerEl) return;
-
+    if (!el) return;
     el.style.height = "auto";
-    const top = el.getBoundingClientRect().top;
-    const footerHeight = footerEl.getBoundingClientRect().height;
-    const minPx = window.innerHeight - top - footerHeight - 16;
-    el.style.height = `${Math.max(el.scrollHeight, minPx, 150)}px`;
+    el.style.height = `${Math.max(el.scrollHeight, minMemoHeightRef.current)}px`;
   }
 
   useEffect(() => {
+    const el = memoRef.current;
+    const footerEl = footerRef.current;
+    if (el && footerEl) {
+      const BOTTOM_NAV_HEIGHT = 52;
+      const viewportHeight =
+        window.visualViewport?.height ?? window.innerHeight;
+      const top = el.getBoundingClientRect().top;
+      const footerHeight = footerEl.getBoundingClientRect().height;
+      minMemoHeightRef.current = Math.max(
+        viewportHeight - top - footerHeight - BOTTOM_NAV_HEIGHT - 24,
+        150,
+      );
+    }
     resizeMemo();
-    window.addEventListener("resize", resizeMemo);
-    return () => window.removeEventListener("resize", resizeMemo);
-  }, [memo, refs, existingPhotoUrls, pendingPhotos, preacherId, categoryId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    resizeMemo();
+  }, [memo]);
 
   function refLabel(ref: BibleRefInput) {
     const book = getBook(ref.startBookId);
