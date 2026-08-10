@@ -60,31 +60,21 @@ export default function SermonFormClient({
 
   function resizeMemo() {
     const el = memoRef.current;
-    if (!el) return;
+    const footerEl = footerRef.current;
+    if (!el || !footerEl) return;
+
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    const top = el.getBoundingClientRect().top;
+    const footerHeight = footerEl.getBoundingClientRect().height;
+    const minPx = window.innerHeight - top - footerHeight - 16;
+    el.style.height = `${Math.max(el.scrollHeight, minPx, 150)}px`;
   }
 
   useEffect(() => {
-    function updateMinHeight() {
-      const memoEl = memoRef.current;
-      const footerEl = footerRef.current;
-      if (!memoEl || !footerEl) return;
-      const top = memoEl.getBoundingClientRect().top;
-      const footerHeight = footerEl.getBoundingClientRect().height;
-      const available = window.innerHeight - top - footerHeight - 16;
-      memoEl.style.minHeight = `${Math.max(available, 150)}px`;
-      resizeMemo();
-    }
-
-    updateMinHeight();
-    window.addEventListener("resize", updateMinHeight);
-    return () => window.removeEventListener("resize", updateMinHeight);
-  }, []);
-
-  useEffect(() => {
     resizeMemo();
-  }, [memo]);
+    window.addEventListener("resize", resizeMemo);
+    return () => window.removeEventListener("resize", resizeMemo);
+  }, [memo, refs, existingPhotoUrls, pendingPhotos, preacherId, categoryId]);
 
   function refLabel(ref: BibleRefInput) {
     const book = getBook(ref.startBookId);
@@ -301,14 +291,14 @@ export default function SermonFormClient({
         </FormRow>
 
         {/* 메모: 안드로이드 원본 그대로 넉넉한 높이 + 우하단 서식 도구 오버레이(현재는 스텁, 리치텍스트 미지원) */}
-        <div className="relative mt-3 flex flex-col rounded-lg bg-input-background">
+        <div className="relative mt-3 rounded-lg bg-input-background">
           <textarea
             ref={memoRef}
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             onInput={resizeMemo}
             placeholder="메모"
-            className="w-full resize-none overflow-hidden bg-transparent p-3 pb-11 text-base outline-none"
+            className="block w-full resize-none overflow-hidden bg-transparent p-3 pb-11 text-base outline-none"
           />
           <div className="absolute bottom-1.5 right-1.5 flex overflow-hidden rounded-xl bg-white shadow-sm">
             <span className="cursor-not-allowed px-2 py-2 text-[13px] text-text-secondary opacity-50">
@@ -389,7 +379,7 @@ export default function SermonFormClient({
             type="button"
             onClick={handleSubmit}
             disabled={isSaving}
-            className="mt-4 cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] text-white disabled:opacity-60"
+            className="mt-4 w-full cursor-pointer rounded-lg bg-brown-primary py-3.5 text-center text-[15px] text-white disabled:opacity-60"
           >
             {isSaving ? "저장 중..." : "저장"}
           </button>
