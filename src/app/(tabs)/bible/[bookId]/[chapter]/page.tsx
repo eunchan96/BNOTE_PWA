@@ -63,15 +63,13 @@ export default async function BibleChapterPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const initialHighlightRanges = user
-    ? await getHighlightRangesForChapter(translation, bookId, chapter)
-    : {};
-  const initialWordMemos = user
-    ? await getWordMemosForChapter(translation, bookId, chapter)
-    : [];
-  const initialMemoVerses = user
-    ? await getMemoVerseNumbers(bookId, chapter)
-    : [];
+  const [initialHighlightRanges, initialWordMemos, initialMemoVerses] = user
+    ? await Promise.all([
+        getHighlightRangesForChapter(translation, bookId, chapter),
+        getWordMemosForChapter(translation, bookId, chapter),
+        getMemoVerseNumbers(bookId, chapter),
+      ])
+    : [{}, [], []];
 
   return (
     <div className="flex flex-col">
