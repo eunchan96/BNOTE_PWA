@@ -4,6 +4,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PROTECTED_PREFIXES = ['/sermons', '/mypage', '/bible/bookmarks', '/bible/highlights', '/bible/scraps', '/bible/memos'];
 
 export async function middleware(request: NextRequest) {
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix),
+  );
+
+  // 보호되지 않은 경로(성경 읽기, 로그인 화면 등)는 Auth 네트워크 호출 자체를 건너뛴다.
+  if (!isProtected) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -29,11 +38,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix),
-  );
-
-  if (isProtected && !user) {
+  if (!user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set(
       'next',
