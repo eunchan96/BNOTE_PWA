@@ -1,0 +1,31 @@
+{
+  "name": "BNOTE - 성경 노트",
+  "short_name": "BNOTE",
+  "description": "성경 읽기, 설교노트, 암송, 기도제목을 아우르는 개인 신앙 기록 앱",
+  "start_url": "/bible",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#795548",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
