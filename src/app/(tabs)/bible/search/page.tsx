@@ -8,7 +8,7 @@ import {
   removeSearchHistory,
 } from "@/lib/bible/search-history";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type SearchResult = {
   bookId: number;
@@ -91,7 +91,7 @@ const SHORT_NAMES = [
   "계",
 ];
 
-export default function BibleSearchPage() {
+function BibleSearchInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const translation = searchParams.get("translation") ?? "NKRV";
@@ -254,5 +254,13 @@ export default function BibleSearchPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function BibleSearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <BibleSearchInner />
+    </Suspense>
   );
 }
