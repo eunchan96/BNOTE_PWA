@@ -1,5 +1,6 @@
 import BottomNav from "@/components/common/BottomNav";
-import type { Metadata } from "next";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
@@ -14,6 +15,16 @@ export const metadata: Metadata = {
   title: "BNOTE",
   description:
     "성경 읽기 + 설교노트 + 암송 + 기도제목을 아우르는 개인 신앙 기록 웹 앱",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BNOTE",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#795548",
 };
 
 export default function RootLayout({
@@ -28,6 +39,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <BottomNav />
         </Suspense>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
