@@ -43,7 +43,10 @@ async function main() {
   const files = await listAllFiles();
   console.log(`[download-data] ${files.length}개 파일 발견`);
 
-  for (const filePath of files) {
+  const CONCURRENCY = 15;
+  let completed = 0;
+
+  async function downloadOne(filePath) {
     const { data, error } = await supabase.storage.from(BUCKET).download(filePath);
     if (error) {
       console.error(`[download-data] ${filePath} 다운로드 실패:`, error.message);
@@ -53,8 +56,21 @@ async function main() {
     const outPath = path.join(process.cwd(), "public", filePath);
     await mkdir(path.dirname(outPath), { recursive: true });
     await writeFile(outPath, buffer);
-    console.log(`[download-data] ${filePath} (${(buffer.length / 1024).toFixed(0)}KB)`);
+    completed++;
+    if (completed % 50 === 0 || completed === files.length) {
+      console.log(`[download-data] ${completed}/${files.length}`);
+    }
   }
+
+  // CONCURRENCY개씩 동시에 처리하는 간단한 워커 풀
+  const queue = [...files];
+  async function worker() {
+    while (queue.length > 0) {
+      const filePath = queue.shift();
+      if (filePath) await downloadOne(filePath);
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
 
   console.log("[download-data] 완료");
 }
