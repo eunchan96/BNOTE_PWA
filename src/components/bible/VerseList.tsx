@@ -506,13 +506,13 @@ export default function VerseList({
                 }`}
               >
                 {bookPartLabel && (
-                  <p className="px-3 pt-3.5 pb-0 text-sm font-bold text-brown-dark">
+                  <p className="break-keep px-3 pt-3.5 pb-0 text-sm font-bold text-brown-dark">
                     [{bookPartLabel}]
                   </p>
                 )}
 
                 {verse.title && (
-                  <p className="px-2 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
+                  <p className="break-keep px-3 pt-2.5 pb-0 text-sm font-bold text-brown-primary">
                     &lt;{verse.title}&gt;
                   </p>
                 )}
@@ -536,7 +536,7 @@ export default function VerseList({
                       data-highlight-container
                       data-verse={verse.verse}
                       data-segment={0}
-                      className="select-text text-base leading-relaxed text-text-primary"
+                      className="break-keep select-text text-base leading-relaxed text-text-primary"
                     >
                       {renderColoredText(
                         verse.text,
@@ -552,7 +552,7 @@ export default function VerseList({
                       )}
                     </p>
                     {secondaryFirstLine && (
-                      <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                      <p className="break-keep mt-1 text-[15px] leading-relaxed text-brown-light">
                         {secondaryFirstLine}
                       </p>
                     )}
@@ -561,7 +561,7 @@ export default function VerseList({
 
                 {verse.title2 && (
                   <>
-                    <p className="px-2 pb-0 text-sm font-bold text-brown-primary">
+                    <p className="break-keep px-3 pb-0 text-sm font-bold text-brown-primary">
                       &lt;{verse.title2}&gt;
                     </p>
                     <div className="flex gap-1 py-1 pb-2 pl-1.5 pr-3">
@@ -571,7 +571,7 @@ export default function VerseList({
                           data-highlight-container
                           data-verse={verse.verse}
                           data-segment={1}
-                          className="select-text text-base leading-relaxed text-text-primary"
+                          className="break-keep select-text text-base leading-relaxed text-text-primary"
                         >
                           {renderColoredText(
                             verse.text2 ?? "",
@@ -588,7 +588,7 @@ export default function VerseList({
                           )}
                         </p>
                         {secondary?.text2 && (
-                          <p className="mt-1 text-[15px] leading-relaxed text-brown-light">
+                          <p className="break-keep mt-1 text-[15px] leading-relaxed text-brown-light">
                             {secondary.text2}
                           </p>
                         )}

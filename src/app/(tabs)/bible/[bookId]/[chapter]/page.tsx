@@ -4,6 +4,7 @@ import VerseList from "@/components/bible/VerseList";
 import { getHighlightRangesForChapter } from "@/lib/actions/bible/highlights";
 import { getMemoVerseNumbers } from "@/lib/actions/bible/verse-memos";
 import { getWordMemosForChapter } from "@/lib/actions/bible/word-memos";
+import { getSermonsForChapter } from "@/lib/actions/sermon/sermons";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
@@ -63,13 +64,19 @@ export default async function BibleChapterPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [initialHighlightRanges, initialWordMemos, initialMemoVerses] = user
+  const [
+    initialHighlightRanges,
+    initialWordMemos,
+    initialMemoVerses,
+    chapterSermons,
+  ] = user
     ? await Promise.all([
         getHighlightRangesForChapter(translation, bookId, chapter),
         getWordMemosForChapter(translation, bookId, chapter),
         getMemoVerseNumbers(bookId, chapter),
+        getSermonsForChapter(bookId, chapter),
       ])
-    : [{}, [], []];
+    : [{}, [], [], []];
 
   return (
     <div className="flex flex-col">
@@ -79,9 +86,10 @@ export default async function BibleChapterPage({
         title={`${book.name} ${chapter}${unit}`}
         translation={translation}
         secondary={secondary}
+        hasSermon={chapterSermons.length > 0}
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col px-3 py-2">
+      <div className="mx-auto flex w-full max-w-2xl flex-col py-2">
         <ScrollToVerse verse={targetVerse} />
         <VerseList
           bookId={bookId}

@@ -12,12 +12,14 @@ export default function BibleTopBar({
   title,
   translation,
   secondary,
+  hasSermon,
 }: {
   bookId: number;
   chapter: number;
   title: string;
   translation: string;
   secondary?: string;
+  hasSermon?: boolean;
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,6 +45,18 @@ export default function BibleTopBar({
           secondary={secondary}
         />
       </div>
+
+      {hasSermon && (
+        <Link
+          href={`/bible/${bookId}/${chapter}/sermons`}
+          aria-label="이 장의 설교 보기"
+          className="ml-1.5 shrink-0 opacity-90"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z" />
+          </svg>
+        </Link>
+      )}
 
       <div className="flex-1" />
 
