@@ -6,6 +6,7 @@ import {
   getScrapGroups,
   type ScrapGroupRow,
 } from "@/lib/actions/bible/scraps";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -22,6 +23,8 @@ export default function ScrapGroupPickerSheet({
   useEffect(() => {
     getScrapGroups().then(setGroups);
   }, []);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">

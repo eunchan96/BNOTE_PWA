@@ -1,5 +1,6 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -17,6 +18,8 @@ export default function PromptDialog({
   onClose: () => void;
 }) {
   const [value, setValue] = useState(initialValue);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-40 flex items-center justify-center p-6">

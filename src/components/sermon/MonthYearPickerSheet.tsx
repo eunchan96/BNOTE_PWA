@@ -1,5 +1,6 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,6 +14,8 @@ export default function MonthYearPickerSheet({
   onClose: () => void;
 }) {
   const [year, setYear] = useState(initialYear);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">

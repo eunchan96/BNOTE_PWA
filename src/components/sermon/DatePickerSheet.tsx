@@ -1,5 +1,6 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -54,6 +55,8 @@ export default function DatePickerSheet({
     }
   }
 
+  useLockBodyScroll();
+
   return createPortal(
     <div className="fixed inset-0 z-30 flex items-end justify-center">
       <button
@@ -88,7 +91,11 @@ export default function DatePickerSheet({
             <span
               key={label}
               className={`flex-1 py-1 text-center text-xs ${
-                i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-text-secondary"
+                i === 0
+                  ? "text-red-500"
+                  : i === 6
+                    ? "text-blue-500"
+                    : "text-text-secondary"
               }`}
             >
               {label}

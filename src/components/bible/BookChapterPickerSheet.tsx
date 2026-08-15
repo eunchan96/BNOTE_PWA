@@ -2,6 +2,7 @@
 
 import { getVerseCounts } from "@/lib/actions/bible/bible-queries";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -68,6 +69,8 @@ export default function BookChapterPickerSheet({
     );
     onClose();
   }
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">

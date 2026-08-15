@@ -2,6 +2,7 @@
 
 import { saveTranslationPreference } from "@/lib/actions/bible/preferences";
 import { TRANSLATIONS } from "@/lib/bible/translations";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -49,6 +50,8 @@ export default function TranslationPickerSheet({
   const secondaryOptions = TRANSLATIONS.filter(
     (t) => t.code !== selectedPrimary,
   );
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">

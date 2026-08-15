@@ -1,5 +1,6 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -17,6 +18,8 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
   // 해당 도메인 만들 때 실제 상태·서버 액션으로 교체하면 됩니다.
   const [readingPlanEnabled, setReadingPlanEnabled] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-30 flex justify-end">

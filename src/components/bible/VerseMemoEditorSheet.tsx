@@ -7,6 +7,7 @@ import {
   type VerseMemoRow,
 } from "@/lib/actions/bible/verse-memos";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -97,6 +98,8 @@ export default function VerseMemoEditorSheet({
 
   const book = getBook(bookId);
   const unit = chapterUnit(bookId);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-30 flex items-end justify-center">
