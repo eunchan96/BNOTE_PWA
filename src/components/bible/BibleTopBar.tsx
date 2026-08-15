@@ -3,9 +3,13 @@
 import BibleLocationPicker from "@/components/bible/BibleLocationPicker";
 import BibleMenuDrawer from "@/components/bible/BibleMenuDrawer";
 import TranslationPickerSheet from "@/components/bible/TranslationPickerSheet";
+import {
+  isChapterRead,
+  toggleChapterRead,
+} from "@/lib/actions/bible/reading-progress";
 import { getSermonsForChapter } from "@/lib/actions/sermon/sermons";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 export default function BibleTopBar({
   bookId,
@@ -14,6 +18,7 @@ export default function BibleTopBar({
   translation,
   secondary,
   isLoggedIn,
+  readingPlanEnabled,
 }: {
   bookId: number;
   chapter: number;
@@ -21,6 +26,7 @@ export default function BibleTopBar({
   translation: string;
   secondary?: string;
   isLoggedIn?: boolean;
+  readingPlanEnabled?: boolean;
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,6 +34,11 @@ export default function BibleTopBar({
     key: string;
     hasSermon: boolean;
   } | null>(null);
+  const [readResult, setReadResult] = useState<{
+    key: string;
+    isRead: boolean;
+  } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -44,10 +55,32 @@ export default function BibleTopBar({
     };
   }, [bookId, chapter, isLoggedIn]);
 
+  useEffect(() => {
+    if (!isLoggedIn || !readingPlanEnabled) return;
+    let cancelled = false;
+    isChapterRead(bookId, chapter).then((read) => {
+      if (cancelled) return;
+      setReadResult({ key: `${bookId}-${chapter}`, isRead: read });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [bookId, chapter, isLoggedIn, readingPlanEnabled]);
+
   // 아직 새 장에 대한 fetch가 끝나기 전(또는 로그아웃 상태)에는 이전 장의 결과를
   // 그대로 쓰지 않도록, key가 지금 장과 일치할 때만 아이콘을 켠다.
   const hasSermon =
     sermonResult?.key === `${bookId}-${chapter}` && sermonResult.hasSermon;
+  const isRead =
+    readResult?.key === `${bookId}-${chapter}` && readResult.isRead;
+
+  function handleReadingPlanCheckClick() {
+    if (!isLoggedIn) return;
+    startTransition(async () => {
+      const next = await toggleChapterRead(bookId, chapter);
+      setReadResult({ key: `${bookId}-${chapter}`, isRead: next });
+    });
+  }
 
   return (
     <header className="scrollbar-hide flex h-14 items-center overflow-x-auto overscroll-x-contain bg-brown-primary px-2">
@@ -83,23 +116,38 @@ export default function BibleTopBar({
         </Link>
       )}
 
+      {readingPlanEnabled && (
+        <button
+          type="button"
+          onClick={handleReadingPlanCheckClick}
+          disabled={isPending}
+          aria-label="성경읽기표 완료 체크"
+          className="ml-1 shrink-0"
+          style={{ opacity: isRead ? 1 : 0.4 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z" />
+          </svg>
+        </button>
+      )}
+
       <div className="flex-1" />
 
       <Link
         href={`/bible/search?translation=${translation}${secondary ? `&secondary=${secondary}` : ""}`}
         aria-label="검색"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-90"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
           <path d="M15.5,14h-0.79l-0.28,-0.27C15.41,12.59 16,11.11 16,9.5 16,5.91 13.09,3 9.5,3S3,5.91 3,9.5 5.91,16 9.5,16c1.61,0 3.09,-0.59 4.23,-1.57l0.27,0.28v0.79l5,4.99L20.49,19l-4.99,-5zM9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14z" />
         </svg>
       </Link>
       <Link
         href="/bible/bookmarks"
         aria-label="북마크"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-90"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
           <path d="M17,3H7c-1.1,0 -2,0.9 -2,2v16l7,-3 7,3V5c0,-1.1 -0.9,-2 -2,-2z" />
         </svg>
       </Link>
@@ -107,9 +155,9 @@ export default function BibleTopBar({
         type="button"
         onClick={() => setIsMenuOpen(true)}
         aria-label="메뉴"
-        className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-90"
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-90"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
           <path d="M3,18h18v-2H3v2zM3,13h18v-2H3v2zM3,6v2h18V6H3z" />
         </svg>
       </button>
@@ -124,7 +172,12 @@ export default function BibleTopBar({
         />
       )}
 
-      {isMenuOpen && <BibleMenuDrawer onClose={() => setIsMenuOpen(false)} />}
+      {isMenuOpen && (
+        <BibleMenuDrawer
+          readingPlanEnabled={Boolean(readingPlanEnabled)}
+          onClose={() => setIsMenuOpen(false)}
+        />
+      )}
     </header>
   );
 }

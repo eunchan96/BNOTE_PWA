@@ -1,6 +1,8 @@
 import BibleTopBar from "@/components/bible/BibleTopBar";
+import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
 import ScrollToVerse from "@/components/bible/ScrollToVerse";
 import VerseList from "@/components/bible/VerseList";
+import { getReadingPlanEnabled } from "@/lib/actions/bible/preferences";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
@@ -54,12 +56,14 @@ export default async function BibleChapterPage({
     {
       data: { user },
     },
+    readingPlanEnabled,
   ] = await Promise.all([
     getChapterVerses(bookId, chapter, translation),
     secondary
       ? getChapterVersesRaw(bookId, chapter, secondary)
       : Promise.resolve(null),
     supabase.auth.getUser(),
+    getReadingPlanEnabled(),
   ]);
 
   if (verses.length === 0) {
@@ -77,10 +81,16 @@ export default async function BibleChapterPage({
         translation={translation}
         secondary={secondary}
         isLoggedIn={Boolean(user)}
+        readingPlanEnabled={readingPlanEnabled}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-2xl flex-col pb-2">
+          <SaveLastReadLocation
+            bookId={bookId}
+            chapter={chapter}
+            verse={targetVerse}
+          />
           <ScrollToVerse verse={targetVerse} />
           <VerseList
             bookId={bookId}

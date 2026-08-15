@@ -1,7 +1,9 @@
 "use client";
 
+import { saveReadingPlanEnabled } from "@/lib/actions/bible/preferences";
 import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -12,12 +14,25 @@ const APPENDIX_ITEMS = [
   { label: "교독문", slug: "responsive-reading" },
 ];
 
-export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
+export default function BibleMenuDrawer({
+  readingPlanEnabled,
+  onClose,
+}: {
+  readingPlanEnabled: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
   const [isAppendixOpen, setIsAppendixOpen] = useState(false);
-  // 성경읽기표/자동스크롤은 아직 실제 기능(백엔드)이 없어서 시각적 스텁입니다.
+  const [readingPlanChecked, setReadingPlanChecked] =
+    useState(readingPlanEnabled);
+  // 자동스크롤은 아직 실제 기능(백엔드)이 없어서 시각적 스텁입니다.
   // 해당 도메인 만들 때 실제 상태·서버 액션으로 교체하면 됩니다.
-  const [readingPlanEnabled, setReadingPlanEnabled] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+
+  function handleToggleReadingPlan(value: boolean) {
+    setReadingPlanChecked(value);
+    saveReadingPlanEnabled(value).then(() => router.refresh());
+  }
 
   useLockBodyScroll();
 
@@ -80,8 +95,8 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
 
           <ToggleRow
             label="성경읽기표 활성화"
-            checked={readingPlanEnabled}
-            onChange={setReadingPlanEnabled}
+            checked={readingPlanChecked}
+            onChange={handleToggleReadingPlan}
           />
           <ToggleRow
             label="자동스크롤 활성화"
