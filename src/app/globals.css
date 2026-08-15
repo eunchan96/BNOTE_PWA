@@ -55,3 +55,31 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* 안드로이드 상단바(HorizontalScrollView, scrollbars="none")와 동일하게
+   가로 스크롤은 되지만 스크롤바는 안 보이게 한다. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 세로 스크롤바는 안드로이드 네이티브 스크롤바처럼 얇고 트랙 없이.
+    일부 모바일 브라우저(삼성 인터넷 등)의 기본 스크롤바는 두꺼운 트랙 박스가
+    화면 끝에서 살짝 떨어져 보이는데, 이를 대체한다. */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+}
+html {
+  scrollbar-width: thin;
+}
