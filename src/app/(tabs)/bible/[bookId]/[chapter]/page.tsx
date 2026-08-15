@@ -47,22 +47,27 @@ export default async function BibleChapterPage({
     notFound();
   }
 
-  const verses = await getChapterVerses(bookId, chapter, translation);
+  const supabase = await createClient();
+
+  const [
+    verses,
+    secondaryVerses,
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    getChapterVerses(bookId, chapter, translation),
+    secondary
+      ? getChapterVersesRaw(bookId, chapter, secondary)
+      : Promise.resolve(null),
+    supabase.auth.getUser(),
+  ]);
 
   if (verses.length === 0) {
     notFound();
   }
 
-  const secondaryVerses = secondary
-    ? await getChapterVersesRaw(bookId, chapter, secondary)
-    : null;
-
   const unit = chapterUnit(bookId);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const [
     initialHighlightRanges,

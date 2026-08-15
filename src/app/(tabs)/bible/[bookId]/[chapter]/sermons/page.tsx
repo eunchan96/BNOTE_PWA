@@ -47,7 +47,7 @@ export default async function ChapterSermonsPage({
                 className="h-9 w-1 shrink-0 rounded-full"
                 style={{ backgroundColor: sermon.colorHex ?? "#B0BEC5" }}
               />
-              <span className="flex-1 truncate text-[15px] text-text-primary">
+              <span className="flex-1 truncate text-15 text-text-primary">
                 {sermon.title}
               </span>
               <span className="flex shrink-0 flex-col items-end">

@@ -523,7 +523,7 @@ export default function VerseList({
                   <button
                     type="button"
                     onClick={(e) => handleNumberClick(verse.verse, e)}
-                    className={`${numberColumnWidth} shrink-0 cursor-pointer self-start text-center font-bold ${
+                    className={`${numberColumnWidth} shrink-0 cursor-pointer self-start text-center text-sm font-bold ${
                       memoVerses.has(verse.verse)
                         ? "text-brown-primary underline"
                         : "text-text-secondary"
@@ -552,7 +552,7 @@ export default function VerseList({
                       )}
                     </p>
                     {secondaryFirstLine && (
-                      <p className="break-keep mt-1 text-[15px] leading-relaxed text-brown-light">
+                      <p className="break-keep mt-1 text-15 leading-relaxed text-brown-light">
                         {secondaryFirstLine}
                       </p>
                     )}
@@ -588,7 +588,7 @@ export default function VerseList({
                           )}
                         </p>
                         {secondary?.text2 && (
-                          <p className="break-keep mt-1 text-[15px] leading-relaxed text-brown-light">
+                          <p className="break-keep mt-1 text-15 leading-relaxed text-brown-light">
                             {secondary.text2}
                           </p>
                         )}

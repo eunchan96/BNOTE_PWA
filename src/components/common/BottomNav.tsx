@@ -53,7 +53,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 h-[52px] border-t border-divider bg-white">
-      <div className="mx-auto flex h-full max-w-2xl items-center px-1">
+      <div className="mx-auto flex h-full max-w-2xl items-center pl-1 pr-4">
         <IconButton href={prevHref} label="이전 장">
           <ChevronLeftIcon />
         </IconButton>
