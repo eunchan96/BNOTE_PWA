@@ -2,7 +2,11 @@ import BibleTopBar from "@/components/bible/BibleTopBar";
 import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
 import ScrollToVerse from "@/components/bible/ScrollToVerse";
 import VerseList from "@/components/bible/VerseList";
-import { getReadingPlanEnabled } from "@/lib/actions/bible/preferences";
+import {
+  getAutoScrollEnabled,
+  getReadingPlanEnabled,
+  getScrollSpeed,
+} from "@/lib/actions/bible/preferences";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
@@ -57,6 +61,8 @@ export default async function BibleChapterPage({
       data: { user },
     },
     readingPlanEnabled,
+    autoScrollEnabled,
+    scrollSpeed,
   ] = await Promise.all([
     getChapterVerses(bookId, chapter, translation),
     secondary
@@ -64,6 +70,8 @@ export default async function BibleChapterPage({
       : Promise.resolve(null),
     supabase.auth.getUser(),
     getReadingPlanEnabled(),
+    getAutoScrollEnabled(),
+    getScrollSpeed(),
   ]);
 
   if (verses.length === 0) {
@@ -82,9 +90,14 @@ export default async function BibleChapterPage({
         secondary={secondary}
         isLoggedIn={Boolean(user)}
         readingPlanEnabled={readingPlanEnabled}
+        autoScrollEnabled={autoScrollEnabled}
+        scrollSpeed={scrollSpeed}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div
+        id="bible-scroll-container"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+      >
         <div className="mx-auto flex w-full max-w-2xl flex-col pb-2">
           <SaveLastReadLocation
             bookId={bookId}

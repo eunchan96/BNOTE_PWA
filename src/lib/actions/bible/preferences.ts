@@ -8,6 +8,8 @@ const LAST_READ_BOOK_COOKIE = "bnote_last_book";
 const LAST_READ_CHAPTER_COOKIE = "bnote_last_chapter";
 const LAST_READ_VERSE_COOKIE = "bnote_last_verse";
 const READING_PLAN_ENABLED_COOKIE = "bnote_reading_plan_enabled";
+const AUTO_SCROLL_ENABLED_COOKIE = "bnote_auto_scroll_enabled";
+const SCROLL_SPEED_COOKIE = "bnote_scroll_speed";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1년
 
 /** 성경읽기표 켜짐/꺼짐 - 안드로이드 AppSettings.isReadingPlanEnabled와 동일하게
@@ -24,6 +26,39 @@ export async function saveReadingPlanEnabled(enabled: boolean) {
 export async function getReadingPlanEnabled(): Promise<boolean> {
   const cookieStore = await cookies();
   return cookieStore.get(READING_PLAN_ENABLED_COOKIE)?.value === "1";
+}
+
+/** 자동스크롤 버튼 표시 여부 - 안드로이드 AppSettings.isAutoScrollEnabled와 동일하게
+ * 기기(브라우저) 단위 설정. 실제 스크롤 동작 자체는 로그인과 무관하다. */
+export async function saveAutoScrollEnabled(enabled: boolean) {
+  const cookieStore = await cookies();
+  cookieStore.set(AUTO_SCROLL_ENABLED_COOKIE, enabled ? "1" : "0", {
+    maxAge: COOKIE_MAX_AGE,
+    path: "/",
+  });
+}
+
+export async function getAutoScrollEnabled(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return cookieStore.get(AUTO_SCROLL_ENABLED_COOKIE)?.value === "1";
+}
+
+/** 자동스크롤 속도(1~5, 기본 3) - 안드로이드 AppSettings.getScrollSpeed/setScrollSpeed와
+ * 동일한 범위/기본값. 지금은 마이페이지 설정 화면이 없어서 바꿀 UI가 없지만, 나중에
+ * 그 화면에서 이 함수만 호출하면 바로 반영되도록 미리 만들어둔다. */
+export async function saveScrollSpeed(speed: number) {
+  const clamped = Math.min(5, Math.max(1, Math.round(speed)));
+  const cookieStore = await cookies();
+  cookieStore.set(SCROLL_SPEED_COOKIE, String(clamped), {
+    maxAge: COOKIE_MAX_AGE,
+    path: "/",
+  });
+}
+
+export async function getScrollSpeed(): Promise<number> {
+  const cookieStore = await cookies();
+  const raw = Number(cookieStore.get(SCROLL_SPEED_COOKIE)?.value ?? "3");
+  return Number.isInteger(raw) && raw >= 1 && raw <= 5 ? raw : 3;
 }
 
 export async function saveTranslationPreference(

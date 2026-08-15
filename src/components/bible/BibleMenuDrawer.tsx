@@ -1,6 +1,9 @@
 "use client";
 
-import { saveReadingPlanEnabled } from "@/lib/actions/bible/preferences";
+import {
+  saveAutoScrollEnabled,
+  saveReadingPlanEnabled,
+} from "@/lib/actions/bible/preferences";
 import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,22 +19,27 @@ const APPENDIX_ITEMS = [
 
 export default function BibleMenuDrawer({
   readingPlanEnabled,
+  autoScrollEnabled,
   onClose,
 }: {
   readingPlanEnabled: boolean;
+  autoScrollEnabled: boolean;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [isAppendixOpen, setIsAppendixOpen] = useState(false);
   const [readingPlanChecked, setReadingPlanChecked] =
     useState(readingPlanEnabled);
-  // 자동스크롤은 아직 실제 기능(백엔드)이 없어서 시각적 스텁입니다.
-  // 해당 도메인 만들 때 실제 상태·서버 액션으로 교체하면 됩니다.
-  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+  const [autoScrollChecked, setAutoScrollChecked] = useState(autoScrollEnabled);
 
   function handleToggleReadingPlan(value: boolean) {
     setReadingPlanChecked(value);
     saveReadingPlanEnabled(value).then(() => router.refresh());
+  }
+
+  function handleToggleAutoScroll(value: boolean) {
+    setAutoScrollChecked(value);
+    saveAutoScrollEnabled(value).then(() => router.refresh());
   }
 
   useLockBodyScroll();
@@ -100,8 +108,8 @@ export default function BibleMenuDrawer({
           />
           <ToggleRow
             label="자동스크롤 활성화"
-            checked={autoScrollEnabled}
-            onChange={setAutoScrollEnabled}
+            checked={autoScrollChecked}
+            onChange={handleToggleAutoScroll}
           />
           {/* 방해금지 모드는 안드로이드 기기 전용 기능이라 웹에는 없음 */}
         </div>

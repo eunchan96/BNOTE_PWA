@@ -19,6 +19,8 @@ export default function BibleTopBar({
   secondary,
   isLoggedIn,
   readingPlanEnabled,
+  autoScrollEnabled,
+  scrollSpeed = 3,
 }: {
   bookId: number;
   chapter: number;
@@ -27,9 +29,15 @@ export default function BibleTopBar({
   secondary?: string;
   isLoggedIn?: boolean;
   readingPlanEnabled?: boolean;
+  autoScrollEnabled?: boolean;
+  scrollSpeed?: number;
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [autoScrollSession, setAutoScrollSession] = useState<{
+    key: string;
+    active: boolean;
+  } | null>(null);
   const [sermonResult, setSermonResult] = useState<{
     key: string;
     hasSermon: boolean;
@@ -39,6 +47,38 @@ export default function BibleTopBar({
     isRead: boolean;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // 장/절이 바뀌면(다른 화면으로 이동하면) 자동스크롤은 항상 꺼진 것으로 취급한다 -
+  // 안드로이드도 onBiblePageSettled에서 changed일 때 stopAutoScroll()을 호출하는 것과 동일.
+  // key가 지금 장과 일치할 때만 active 값을 인정하는 방식이라, effect에서 동기적으로
+  // setState를 호출할 필요가 없다.
+  const isAutoScrolling =
+    autoScrollSession?.key === `${bookId}-${chapter}` &&
+    autoScrollSession.active;
+
+  function toggleAutoScroll() {
+    setAutoScrollSession({
+      key: `${bookId}-${chapter}`,
+      active: !isAutoScrolling,
+    });
+  }
+
+  // 실제 스크롤 루프. 안드로이드 공식: 속도 1~5 -> 한 번에 (2+속도)px, (60-속도*8)ms 간격.
+  // 다만 안드로이드의 이 px는 "기기 실제 물리 픽셀"이고, 우리 CSS px는 안드로이드의 dp에
+  // 더 가까운 단위라 그대로 쓰면 요즘 스마트폰 밀도(대략 2.75배) 기준으로 훨씬 빠르게
+  // 느껴진다. 그래서 안드로이드 공식값을 밀도로 나눠서 체감 속도를 맞춘다.
+  const ANDROID_DENSITY_ESTIMATE = 2.75;
+  useEffect(() => {
+    if (!isAutoScrolling) return;
+    const el = document.getElementById("bible-scroll-container");
+    if (!el) return;
+    const pixelsPerTick = (2 + scrollSpeed) / ANDROID_DENSITY_ESTIMATE;
+    const intervalMs = 60 - scrollSpeed * 8;
+    const id = window.setInterval(() => {
+      el.scrollBy({ top: pixelsPerTick });
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, [isAutoScrolling, scrollSpeed]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -122,7 +162,7 @@ export default function BibleTopBar({
           onClick={handleReadingPlanCheckClick}
           disabled={isPending}
           aria-label="성경읽기표 완료 체크"
-          className="ml-1 shrink-0"
+          className="ml-2 shrink-0"
           style={{ opacity: isRead ? 1 : 0.4 }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
@@ -132,6 +172,25 @@ export default function BibleTopBar({
       )}
 
       <div className="flex-1" />
+
+      {autoScrollEnabled && (
+        <button
+          type="button"
+          onClick={toggleAutoScroll}
+          aria-label="자동 스크롤"
+          className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90"
+        >
+          {isAutoScrolling ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+              <path d="M6,19h4V5H6V19zM14,5v14h4V5H14z" />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+              <path d="M8,5v14l11,-7z" />
+            </svg>
+          )}
+        </button>
+      )}
 
       <Link
         href={`/bible/search?translation=${translation}${secondary ? `&secondary=${secondary}` : ""}`}
@@ -175,6 +234,7 @@ export default function BibleTopBar({
       {isMenuOpen && (
         <BibleMenuDrawer
           readingPlanEnabled={Boolean(readingPlanEnabled)}
+          autoScrollEnabled={Boolean(autoScrollEnabled)}
           onClose={() => setIsMenuOpen(false)}
         />
       )}
