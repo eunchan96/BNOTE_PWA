@@ -50,7 +50,7 @@ export default function BibleTopBar({
     sermonResult?.key === `${bookId}-${chapter}` && sermonResult.hasSermon;
 
   return (
-    <header className="scrollbar-hide sticky top-0 z-10 flex h-14 items-center overflow-x-auto overscroll-x-contain bg-brown-primary px-2">
+    <header className="scrollbar-hide flex h-14 items-center overflow-x-auto overscroll-x-contain bg-brown-primary px-2">
       <button
         type="button"
         onClick={() => setIsPickerOpen(true)}
