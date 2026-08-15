@@ -79,7 +79,7 @@ export default async function BibleChapterPage({
         isLoggedIn={Boolean(user)}
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col py-2">
+      <div className="mx-auto flex w-full max-w-2xl flex-col pb-2">
         <ScrollToVerse verse={targetVerse} />
         <VerseList
           bookId={bookId}

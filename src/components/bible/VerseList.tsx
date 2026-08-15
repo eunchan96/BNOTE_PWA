@@ -480,7 +480,7 @@ export default function VerseList({
                   <button
                     type="button"
                     onClick={(e) => handleNumberClick(verse.verse, e)}
-                    className={`${numberColumnWidth} shrink-0 cursor-pointer self-start text-center text-sm font-bold ${
+                    className={`${numberColumnWidth} mt-[3px] shrink-0 cursor-pointer self-start text-center text-sm font-bold ${
                       memoVerses.has(verse.verse)
                         ? "text-brown-primary underline"
                         : "text-text-secondary"
