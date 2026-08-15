@@ -14,6 +14,7 @@ import {
   type HighlightRangeMap,
 } from "@/lib/actions/bible/highlights";
 import { createScraps } from "@/lib/actions/bible/scraps";
+import { getVerseInteractionState } from "@/lib/actions/bible/verse-interaction";
 import type { WordMemoRow } from "@/lib/actions/bible/word-memos";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
@@ -122,23 +123,17 @@ export default function VerseList({
   translation,
   verses,
   secondaryVerses,
-  initialHighlightRanges,
-  initialWordMemos,
-  initialMemoVerses,
+  isLoggedIn,
 }: {
   bookId: number;
   chapter: number;
   translation: string;
   verses: BibleVerseRow[];
   secondaryVerses: RawVerseRow[] | null;
-  initialHighlightRanges: HighlightRangeMap;
-  initialWordMemos: WordMemoRow[];
-  initialMemoVerses: number[];
+  isLoggedIn?: boolean;
 }) {
-  const [highlightRanges, setHighlightRanges] = useState<HighlightRangeMap>(
-    initialHighlightRanges,
-  );
-  const [wordMemos, setWordMemos] = useState<WordMemoRow[]>(initialWordMemos);
+  const [highlightRanges, setHighlightRanges] = useState<HighlightRangeMap>({});
+  const [wordMemos, setWordMemos] = useState<WordMemoRow[]>([]);
   const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
   const [mode, setMode] = useState<Mode>("none");
   const [pendingSelection, setPendingSelection] =
@@ -149,64 +144,26 @@ export default function VerseList({
     boxes: WordMemoBoxInput[];
   } | null>(null);
   const [showScrapPicker, setShowScrapPicker] = useState(false);
-  const [memoVerses, setMemoVerses] = useState<Set<number>>(
-    new Set(initialMemoVerses),
-  );
+  const [memoVerses, setMemoVerses] = useState<Set<number>>(new Set());
   const [memoEditorVerse, setMemoEditorVerse] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // 드래그로 텍스트를 선택하면(절 하나 안에서만) 하단 툴바를 "텍스트 선택" 모드로 바꾼다.
+  // 본문은 이미(로컬 파일 캐시라) 즉시 그려진 상태다. 하이라이트·단어메모·구절메모는
+  // 사용자별 Supabase 조회라 시간이 걸리므로, 화면을 막지 않고 마운트된 뒤 따로 가져와서
+  // 채운다 — 안드로이드처럼 본문이 먼저 보이고 하이라이트가 살짝 늦게 입혀지는 느낌.
   useEffect(() => {
-    function handleSelectionChange() {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        setPendingSelection(null);
-        if (mode === "textSelection") setMode("none");
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const anchorNode = range.commonAncestorContainer;
-      const anchorEl =
-        anchorNode.nodeType === Node.TEXT_NODE
-          ? anchorNode.parentElement
-          : (anchorNode as Element);
-      const container = anchorEl?.closest(
-        "[data-highlight-container]",
-      ) as HTMLElement | null;
-
-      if (
-        !container ||
-        !container.contains(range.startContainer) ||
-        !container.contains(range.endContainer)
-      ) {
-        setPendingSelection(null);
-        if (mode === "textSelection") setMode("none");
-        return;
-      }
-
-      const verse = Number(container.dataset.verse);
-      const segment = Number(container.dataset.segment);
-
-      const preRange = document.createRange();
-      preRange.selectNodeContents(container);
-      preRange.setEnd(range.startContainer, range.startOffset);
-      const start = preRange.toString().length;
-      const end = start + range.toString().length;
-
-      if (start === end) {
-        setPendingSelection(null);
-        return;
-      }
-
-      setPendingSelection({ verse, segment, start, end });
-      setMode("textSelection");
-    }
-
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () =>
-      document.removeEventListener("selectionchange", handleSelectionChange);
-  }, [mode]);
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    getVerseInteractionState(translation, bookId, chapter).then((state) => {
+      if (cancelled) return;
+      setHighlightRanges(state.highlightRanges);
+      setWordMemos(state.wordMemos);
+      setMemoVerses(new Set(state.memoVerseNumbers));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, translation, bookId, chapter]);
 
   function clearBrowserSelection() {
     window.getSelection()?.removeAllRanges();

@@ -120,7 +120,7 @@ export default function BookChapterPickerSheet({
                       className={`cursor-pointer rounded-lg px-1 py-4 text-center text-[13px] ${
                         isSelected
                           ? "bg-brown-primary text-white"
-                          : "bg-zinc-100 text-zinc-800"
+                          : "bg-input-background text-text-primary"
                       }`}
                     >
                       {book.name}
@@ -221,10 +221,10 @@ function NumberGrid({
           key={value}
           type="button"
           onClick={() => onSelect(value)}
-          className={`flex h-11 items-center justify-center rounded-lg text-sm ${
+          className={`flex h-12 items-center justify-center rounded-lg text-sm ${
             value === selected
               ? "bg-brown-primary text-white"
-              : "bg-zinc-100 text-zinc-800"
+              : "bg-input-background text-text-primary"
           } cursor-pointer`}
         >
           {value}

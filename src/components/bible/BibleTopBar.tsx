@@ -3,8 +3,9 @@
 import BibleLocationPicker from "@/components/bible/BibleLocationPicker";
 import BibleMenuDrawer from "@/components/bible/BibleMenuDrawer";
 import TranslationPickerSheet from "@/components/bible/TranslationPickerSheet";
+import { getSermonsForChapter } from "@/lib/actions/sermon/sermons";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function BibleTopBar({
   bookId,
@@ -12,17 +13,41 @@ export default function BibleTopBar({
   title,
   translation,
   secondary,
-  hasSermon,
+  isLoggedIn,
 }: {
   bookId: number;
   chapter: number;
   title: string;
   translation: string;
   secondary?: string;
-  hasSermon?: boolean;
+  isLoggedIn?: boolean;
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [sermonResult, setSermonResult] = useState<{
+    key: string;
+    hasSermon: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    getSermonsForChapter(bookId, chapter).then((sermons) => {
+      if (cancelled) return;
+      setSermonResult({
+        key: `${bookId}-${chapter}`,
+        hasSermon: sermons.length > 0,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [bookId, chapter, isLoggedIn]);
+
+  // 아직 새 장에 대한 fetch가 끝나기 전(또는 로그아웃 상태)에는 이전 장의 결과를
+  // 그대로 쓰지 않도록, key가 지금 장과 일치할 때만 아이콘을 켠다.
+  const hasSermon =
+    sermonResult?.key === `${bookId}-${chapter}` && sermonResult.hasSermon;
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center overflow-x-auto bg-brown-primary px-2">
