@@ -35,11 +35,12 @@
   --text-lg: calc(1.125rem * var(--font-scale));
   --text-xl: calc(1.25rem * var(--font-scale));
 
-  /* 기본 스케일에 없던 중간 크기들(안드로이드 11/13/15/17sp에 대응) */
+  /* 기본 스케일에 없던 중간 크기들(안드로이드 11/13/15/17/22sp에 대응) */
   --text-11: calc(0.6875rem * var(--font-scale));
   --text-13: calc(0.8125rem * var(--font-scale));
   --text-15: calc(0.9375rem * var(--font-scale));
   --text-17: calc(1.0625rem * var(--font-scale));
+  --text-22: calc(1.375rem * var(--font-scale));
 }
 
 @media (prefers-color-scheme: dark) {

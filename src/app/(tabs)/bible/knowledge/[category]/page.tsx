@@ -1,5 +1,6 @@
 import KnowledgeListClient from "@/components/bible/KnowledgeListClient";
 import {
+  getCategoryHasSearch,
   getCategoryOrder,
   getCategoryTitle,
   getKnowledgeItems,
@@ -22,6 +23,7 @@ export default async function KnowledgeListPage({
       categorySlug={category}
       title={getCategoryTitle(category)}
       categoryOrder={getCategoryOrder(category)}
+      hasSearch={getCategoryHasSearch(category)}
       items={items}
     />
   );
