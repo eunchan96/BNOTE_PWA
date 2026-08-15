@@ -562,8 +562,8 @@ export default function VerseList({
       <div className="h-[30vh]" />
 
       {mode === "selection" && (
-        <div className="fixed inset-x-0 bottom-[60px] z-10 flex justify-center">
-          <div className="flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
+        <div className="fixed inset-x-5 bottom-[60px] z-10 flex justify-center">
+          <div className="scrollbar-hide flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
             {selectedVerses.size === 1 && (
@@ -622,8 +622,8 @@ export default function VerseList({
       )}
 
       {mode === "textSelection" && pendingSelection && (
-        <div className="fixed inset-x-0 bottom-[60px] z-10 flex justify-center">
-          <div className="flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
+        <div className="fixed inset-x-5 bottom-[60px] z-10 flex justify-center">
+          <div className="scrollbar-hide flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
             <ToolbarButton label="복사" onClick={handleCopySelection} />
@@ -750,7 +750,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="cursor-pointer px-3 py-2 text-sm text-white disabled:cursor-default disabled:opacity-50"
+      className="shrink-0 cursor-pointer whitespace-nowrap px-3 py-2 text-sm text-white disabled:cursor-default disabled:opacity-50"
     >
       {label}
     </button>
@@ -758,5 +758,5 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div className="h-6 w-px bg-white/20" />;
+  return <div className="h-6 w-px shrink-0 bg-white/20" />;
 }

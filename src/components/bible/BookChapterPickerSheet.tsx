@@ -109,7 +109,7 @@ export default function BookChapterPickerSheet({
 
         <div className="border-t border-divider" />
 
-        <div className="h-[420px] overflow-y-auto p-2">
+        <div key={step} className="h-[420px] overflow-y-auto p-2">
           {step === "book" && (
             <div className="flex flex-col gap-2 p-1">
               <div className="grid grid-cols-4 gap-2">

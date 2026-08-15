@@ -69,19 +69,17 @@ export default async function BibleChapterPage({
   const unit = chapterUnit(bookId);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
-      <div className="fixed inset-x-0 top-0 z-10">
-        <BibleTopBar
-          bookId={bookId}
-          chapter={chapter}
-          title={`${book.name} ${chapter}${unit}`}
-          translation={translation}
-          secondary={secondary}
-          isLoggedIn={Boolean(user)}
-        />
-      </div>
+    <div className="fixed inset-x-0 top-0 bottom-[52px] flex flex-col overflow-hidden">
+      <BibleTopBar
+        bookId={bookId}
+        chapter={chapter}
+        title={`${book.name} ${chapter}${unit}`}
+        translation={translation}
+        secondary={secondary}
+        isLoggedIn={Boolean(user)}
+      />
 
-      <div className="mt-14 h-[calc(100dvh-56px-52px)] overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-2xl flex-col pb-2">
           <ScrollToVerse verse={targetVerse} />
           <VerseList
