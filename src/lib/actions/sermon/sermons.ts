@@ -17,6 +17,24 @@ async function requireUser() {
   return { supabase, user };
 }
 
+/** getSermons()처럼 페이지 최초 로딩 경로에서만 쓰는 가벼운 버전.
+ * /sermons, /mypage 등은 이미 미들웨어가 같은 요청 안에서 getUser()(네트워크 검증)를
+ * 한 번 거쳤으므로, 여기서는 쿠키에서 바로 읽는 getSession()으로 그 결과를 재사용한다 -
+ * 탭 전환마다 인증 네트워크 호출이 두 번 일어나던 것을 한 번으로 줄인다.
+ * 쓰기(생성/수정/삭제) 액션은 보안을 위해 여전히 requireUser()(getUser())를 쓴다. */
+async function requireSessionUser() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/login?next=/sermons");
+  }
+
+  return { supabase, user: session.user };
+}
+
 export type PreacherRow = { id: number; name: string };
 
 export async function getPreachers(): Promise<PreacherRow[]> {
@@ -105,7 +123,7 @@ function toShortLabel(r: {
 }
 
 export async function getSermons(): Promise<SermonListRow[]> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireSessionUser();
 
   const { data, error } = await supabase
     .from("sermon")

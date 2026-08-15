@@ -63,21 +63,38 @@ export default function BibleTopBar({
     });
   }
 
-  // 실제 스크롤 루프. 안드로이드 공식: 속도 1~5 -> 한 번에 (2+속도)px, (60-속도*8)ms 간격.
-  // 다만 안드로이드의 이 px는 "기기 실제 물리 픽셀"이고, 우리 CSS px는 안드로이드의 dp에
-  // 더 가까운 단위라 그대로 쓰면 요즘 스마트폰 밀도(대략 2.75배) 기준으로 훨씬 빠르게
-  // 느껴진다. 그래서 안드로이드 공식값을 밀도로 나눠서 체감 속도를 맞춘다.
-  const ANDROID_DENSITY_ESTIMATE = 2.75;
+  // 실제 스크롤 루프. setInterval + 1px 점프 방식은 느린 속도일수록 초당 갱신 횟수가
+  // 적어져(예: 속도 1은 초당 8번) 사람 눈에 뚝뚝 끊겨 보인다("지지직"거리는 느낌).
+  // 그래서 화면 주사율에 맞춰 매 프레임 미세한 소수점 단위로 움직이는
+  // requestAnimationFrame 방식으로 바꿔서 항상 매끄럽게 움직이도록 한다.
+  // 속도 1~5에 대응하는 목표 속도(초당 px) - 나중에 실기기에서 느낌 보고 이 표만 조절하면 된다.
+  const SPEED_TO_PX_PER_SEC: Record<number, number> = {
+    1: 8,
+    2: 16,
+    3: 26,
+    4: 40,
+    5: 60,
+  };
   useEffect(() => {
     if (!isAutoScrolling) return;
     const el = document.getElementById("bible-scroll-container");
     if (!el) return;
-    const pixelsPerTick = (2 + scrollSpeed) / ANDROID_DENSITY_ESTIMATE;
-    const intervalMs = 60 - scrollSpeed * 8;
-    const id = window.setInterval(() => {
-      el.scrollBy({ top: pixelsPerTick });
-    }, intervalMs);
-    return () => window.clearInterval(id);
+    const pxPerSec = SPEED_TO_PX_PER_SEC[scrollSpeed] ?? SPEED_TO_PX_PER_SEC[3];
+
+    let rafId: number;
+    let lastTime: number | null = null;
+
+    function step(time: number) {
+      if (lastTime !== null) {
+        const deltaSeconds = (time - lastTime) / 1000;
+        el!.scrollTop += pxPerSec * deltaSeconds;
+      }
+      lastTime = time;
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(rafId);
   }, [isAutoScrolling, scrollSpeed]);
 
   useEffect(() => {
