@@ -45,10 +45,10 @@ export default async function HighlightBookDetailPage({
               <Link
                 key={row.verse}
                 href={`/bible/${bookId}/${row.chapter}?verse=${row.verse}`}
-                className="flex cursor-pointer items-start gap-2.5 px-4 py-2.5"
+                className="flex cursor-pointer items-center gap-2.5 px-4 py-2.5"
               >
                 <span
-                  className="mt-1.5 h-3 w-3 shrink-0 rounded-full"
+                  className="h-3 w-3 shrink-0 rounded-full"
                   style={{ backgroundColor: row.colorHex }}
                 />
                 <p className="line-clamp-2 flex-1 text-sm text-text-primary">

@@ -28,7 +28,7 @@ export default async function HighlightBookListPage() {
               <span className="truncate text-base text-text-primary">
                 {book.bookName}
               </span>
-              <span className="text-sm text-zinc-400">{book.count}개</span>
+              <span className="text-sm text-text-hint">{book.count}개</span>
             </Link>
           </li>
         ))}

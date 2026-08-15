@@ -35,19 +35,22 @@ export default async function HymnMajorCategoryPage() {
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">찬송 분류</h1>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 p-3">
+      <div className="grid grid-cols-3 gap-3 p-1.5">
         {cells.map(({ major, rangeLabel, href }) => (
           <Link
             key={major.id}
             href={href}
-            className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg bg-zinc-100 p-2 text-center"
+            className="flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-lg bg-input-background p-3 text-center"
           >
-            <span className="text-sm text-text-primary">{major.name}</span>
-            {rangeLabel && (
-              <span className="mt-1 text-xs text-text-secondary">
-                {rangeLabel}
-              </span>
-            )}
+            <span className="text-sm text-text-primary">
+              {major.name}
+              {rangeLabel && (
+                <>
+                  <br />
+                  {rangeLabel}
+                </>
+              )}
+            </span>
           </Link>
         ))}
       </div>

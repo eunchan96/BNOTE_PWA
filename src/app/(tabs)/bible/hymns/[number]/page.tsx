@@ -32,13 +32,13 @@ export default async function HymnDetailPage({
                 key={fileName}
                 src={`/hymn-data/images/${fileName}`}
                 alt={`${hymn.number}장 악보 ${index + 1}페이지`}
-                className="w-full rounded-lg"
+                className="w-full"
               />
             ))}
           </div>
         )}
 
-        <HymnYoutubeCard label="찬양" youtubeUrl={hymn.youtubeSong} />
+        <HymnYoutubeCard label="노래" youtubeUrl={hymn.youtubeSong} />
         <HymnYoutubeCard label="MR" youtubeUrl={hymn.youtubeMr} />
       </div>
     </div>

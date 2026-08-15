@@ -155,7 +155,7 @@ function ListRow({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full px-4 py-3 text-left text-[15px] ${
+      className={`w-full px-4 py-3.5 text-left text-base ${
         selected ? "font-bold text-brown-primary" : "text-text-primary"
       } cursor-pointer`}
     >
