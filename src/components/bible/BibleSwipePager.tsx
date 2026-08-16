@@ -109,6 +109,17 @@ export default function BibleSwipePager({
 
     function onTouchStart(e: TouchEvent) {
       if (e.touches.length !== 1) return;
+
+      // 이미 진행 중인 텍스트 선택(길게 눌러 선택 핸들이 나온 뒤, 그 핸들을 드래그해서
+      // 범위를 넓히는 중)이면 스와이프를 비활성화한다 - 그 상태에서 preventDefault를
+      // 걸면 선택 확장 자체가 막혀서 선택 툴바가 안 뜨게 된다. 길게 누르지 않고 그냥
+      // 미는 일반적인 스와이프는 이 시점에 선택된 텍스트가 없으므로 영향받지 않는다.
+      if (window.getSelection()?.toString()) {
+        dragging = false;
+        horizontalLock = null;
+        return;
+      }
+
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       startTime = performance.now();
@@ -120,6 +131,17 @@ export default function BibleSwipePager({
 
     function onTouchMove(e: TouchEvent) {
       if (!dragging) return;
+
+      // 드래그 도중에 텍스트 선택이 새로 시작됐다면(길게 눌러 선택 핸들이 나타남)
+      // 스와이프를 즉시 취소하고 제자리로 되돌려서 선택 동작을 방해하지 않는다.
+      if (window.getSelection()?.toString()) {
+        dragging = false;
+        horizontalLock = null;
+        track!.style.transition = "transform 150ms ease-out";
+        track!.style.transform = "translateX(0px)";
+        return;
+      }
+
       const touch = e.touches[0];
       const dx = touch.clientX - startX;
       const dy = touch.clientY - startY;

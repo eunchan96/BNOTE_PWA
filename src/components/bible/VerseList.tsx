@@ -46,16 +46,33 @@ function psalmsBookPartLabel(
 }
 
 /** 문자 단위로 색을 입혀서, 겹치는 하이라이트는 나중 것(id가 큰 것)이 위에 칠해지게 만든다. */
-function contrastTextColor(colorHex: string): string {
+function contrastTextColor(colorHex: string | null | undefined): string {
+  if (!colorHex) return "#212121";
   const hex = colorHex.replace("#", "");
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return "#212121";
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.6 ? "#212121" : "#F5F5F5";
 }
 
 function renderColoredText(
+  text: string,
+  highlightRanges: HighlightRange[],
+  memoRanges: { start: number; end: number }[],
+) {
+  try {
+    return renderColoredTextUnsafe(text, highlightRanges, memoRanges);
+  } catch (err) {
+    // 특정 절의 하이라이트/메모 데이터가 이상해서 계산 중 예외가 나더라도, 그 절만
+    // 일반 텍스트로 보여주고 뒤따르는 절들까지 렌더링이 깨지지 않게 막는다.
+    console.error("renderColoredText failed, falling back to plain text", err);
+    return text;
+  }
+}
+
+function renderColoredTextUnsafe(
   text: string,
   highlightRanges: HighlightRange[],
   memoRanges: { start: number; end: number }[],
