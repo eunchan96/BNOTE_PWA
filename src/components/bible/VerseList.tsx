@@ -696,7 +696,10 @@ export default function VerseList({
 
       {mode === "selection" && (
         <div className="fixed inset-x-5 bottom-[60px] z-10 flex justify-center">
-          <div className="scrollbar-hide flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-zinc-800 px-2 py-1 shadow-lg">
+          <div
+            data-no-swipe-nav
+            className="scrollbar-hide flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-zinc-800 px-2 py-1 shadow-lg"
+          >
             <ToolbarButton label="✕" onClick={clearSelection} />
             <Divider />
             {selectedVerses.size === 1 && (

@@ -1,8 +1,12 @@
 "use client";
 
+import {
+  animateChapterTransition,
+  getCachedChapterPeekSync,
+} from "@/components/bible/BibleSwipePager";
 import { getBook, nextChapter, previousChapter } from "@/lib/bible/bible-books";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/bible", key: "bible" as const },
@@ -15,6 +19,7 @@ const CHAPTER_PATH = /^\/bible\/(\d+)\/(\d+)/;
 export default function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   if (
     pathname === "/login" ||
@@ -31,33 +36,65 @@ export default function BottomNav() {
   const chapterMatch = pathname.match(CHAPTER_PATH);
   const translationParam = searchParams.get("translation");
   const secondaryParam = searchParams.get("secondary");
+  const translation = translationParam ?? "NKRV";
 
   let prevHref: string | null = null;
   let nextHref: string | null = null;
+  let prevDest: { bookId: number; chapter: number } | null = null;
+  let nextDest: { bookId: number; chapter: number } | null = null;
   if (chapterMatch) {
     const bookId = Number(chapterMatch[1]);
     const chapter = Number(chapterMatch[2]);
     if (getBook(bookId)) {
-      const prev = previousChapter(bookId, chapter);
-      const next = nextChapter(bookId, chapter);
+      prevDest = previousChapter(bookId, chapter);
+      nextDest = nextChapter(bookId, chapter);
 
       const params = new URLSearchParams();
       if (translationParam) params.set("translation", translationParam);
       if (secondaryParam) params.set("secondary", secondaryParam);
       const suffix = params.toString() ? `?${params.toString()}` : "";
 
-      prevHref = prev ? `/bible/${prev.bookId}/${prev.chapter}${suffix}` : null;
-      nextHref = next ? `/bible/${next.bookId}/${next.chapter}${suffix}` : null;
+      prevHref = prevDest
+        ? `/bible/${prevDest.bookId}/${prevDest.chapter}${suffix}`
+        : null;
+      nextHref = nextDest
+        ? `/bible/${nextDest.bookId}/${nextDest.chapter}${suffix}`
+        : null;
     }
+  }
+
+  function goToChapter(
+    direction: "prev" | "next",
+    href: string | null,
+    dest: { bookId: number; chapter: number } | null,
+  ) {
+    if (!href || !dest) return;
+    // BibleSwipePager가 항상 앞뒤 ±2장까지 미리 캐시에 데워두므로, 버튼으로 이동할
+    // 때도 스와이프와 똑같이 진짜 내용이 슬라이드로 미리 보이는 경우가 대부분이다.
+    const cachedPeek = getCachedChapterPeekSync(
+      dest.bookId,
+      dest.chapter,
+      translation,
+      secondaryParam ?? undefined,
+    );
+    animateChapterTransition(router, direction, href, cachedPeek?.title);
   }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 h-[52px] border-t border-divider bg-white">
       <div className="mx-auto flex h-full max-w-2xl items-center pl-1 pr-4">
-        <IconButton href={prevHref} label="이전 장">
+        <IconButton
+          onClick={() => goToChapter("prev", prevHref, prevDest)}
+          disabled={!prevHref}
+          label="이전 장"
+        >
           <ChevronLeftIcon />
         </IconButton>
-        <IconButton href={nextHref} label="다음 장">
+        <IconButton
+          onClick={() => goToChapter("next", nextHref, nextDest)}
+          disabled={!nextHref}
+          label="다음 장"
+        >
           <ChevronRightIcon />
         </IconButton>
 
@@ -82,25 +119,28 @@ export default function BottomNav() {
 }
 
 function IconButton({
-  href,
+  onClick,
+  disabled,
   label,
   children,
 }: {
-  href: string | null;
+  onClick: () => void;
+  disabled?: boolean;
   label: string;
   children: React.ReactNode;
 }) {
-  if (!href) {
+  if (disabled) {
     return <span className="h-10 w-10" />;
   }
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
+      onClick={onClick}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-full"
+      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full"
     >
       {children}
-    </Link>
+    </button>
   );
 }
 

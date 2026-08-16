@@ -110,6 +110,17 @@ export default function BibleSwipePager({
     function onTouchStart(e: TouchEvent) {
       if (e.touches.length !== 1) return;
 
+      const target = e.target as Element | null;
+
+      // 자체적으로 가로 스크롤되는 영역(선택 툴바 등, data-no-swipe-nav로 표시) 위에서
+      // 시작한 터치는 장 넘기기 스와이프에서 제외한다 - 안 그러면 툴바를 좌우로 밀려는
+      // 제스처를 "장 넘기기"로 오인해서 툴바의 가로 스크롤 자체가 막혀버린다.
+      if (target?.closest("[data-no-swipe-nav]")) {
+        dragging = false;
+        horizontalLock = null;
+        return;
+      }
+
       // 이미 진행 중인 텍스트 선택(길게 눌러 선택 핸들이 나온 뒤, 그 핸들을 드래그해서
       // 범위를 넓히는 중)이면 스와이프를 비활성화한다 - 그 상태에서 preventDefault를
       // 걸면 선택 확장 자체가 막혀서 선택 툴바가 안 뜨게 된다. 길게 누르지 않고 그냥
@@ -244,4 +255,67 @@ export default function BibleSwipePager({
       </div>
     </div>
   );
+}
+
+// 브라우저 메모리에 계속 남는 캐시 - BibleSwipePager가 마운트/언마운트를 반복해도
+// (장을 넘길 때마다 새 인스턴스가 뜬다) 한 번 가져온 장은 다시 안 가져온다.
+const peekCache = new Map<string, ChapterPeek | null>();
+
+export function peekCacheKey(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+) {
+  return `${bookId}-${chapter}-${translation}-${secondary ?? ""}`;
+}
+
+export async function getCachedChapterPeek(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+): Promise<ChapterPeek | null> {
+  const key = peekCacheKey(bookId, chapter, translation, secondary);
+  if (peekCache.has(key)) return peekCache.get(key)!;
+  const peek = await getChapterPeek(bookId, chapter, translation, secondary);
+  peekCache.set(key, peek);
+  return peek;
+}
+
+/** 이미 캐시에 있으면 즉시(동기) 돌려준다. 없으면 undefined. */
+export function getCachedChapterPeekSync(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+): ChapterPeek | null | undefined {
+  return peekCache.get(peekCacheKey(bookId, chapter, translation, secondary));
+}
+
+/**
+ * 하단바의 이전/다음 장 버튼처럼, 스와이프가 아니라 버튼 클릭으로 장을 넘길 때도
+ * 스와이프와 똑같은 슬라이드 전환 + 미리보기 방식을 쓰기 위한 함수. BibleSwipePager가
+ * 이미 옆 장을 캐시에 데워뒀을 가능성이 높으므로(항상 ±2까지 미리 데워둔다), 대부분의
+ * 경우 실제 이동 전에 진짜 내용이 슬라이드로 미리 보인다.
+ */
+export function animateChapterTransition(
+  router: { push: (href: string) => void },
+  direction: "prev" | "next",
+  href: string,
+  destTitle?: string,
+) {
+  const track = document.getElementById("bible-swipe-track");
+  const titleEl = document.getElementById("bible-location-title");
+
+  if (!track) {
+    router.push(href);
+    return;
+  }
+
+  track.style.transition = "transform 200ms ease-out";
+  track.style.transform = `translateX(${direction === "prev" ? window.innerWidth : -window.innerWidth}px)`;
+  if (titleEl && destTitle) titleEl.textContent = destTitle;
+
+  window.setTimeout(() => router.push(href), 190);
 }
