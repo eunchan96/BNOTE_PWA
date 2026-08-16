@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  saveAutoScrollEnabled,
-  saveReadingPlanEnabled,
-} from "@/lib/actions/bible/preferences";
 import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -20,27 +15,17 @@ const APPENDIX_ITEMS = [
 export default function BibleMenuDrawer({
   readingPlanEnabled,
   autoScrollEnabled,
+  onToggleReadingPlan,
+  onToggleAutoScroll,
   onClose,
 }: {
   readingPlanEnabled: boolean;
   autoScrollEnabled: boolean;
+  onToggleReadingPlan: (value: boolean) => void;
+  onToggleAutoScroll: (value: boolean) => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [isAppendixOpen, setIsAppendixOpen] = useState(false);
-  const [readingPlanChecked, setReadingPlanChecked] =
-    useState(readingPlanEnabled);
-  const [autoScrollChecked, setAutoScrollChecked] = useState(autoScrollEnabled);
-
-  function handleToggleReadingPlan(value: boolean) {
-    setReadingPlanChecked(value);
-    saveReadingPlanEnabled(value).then(() => router.refresh());
-  }
-
-  function handleToggleAutoScroll(value: boolean) {
-    setAutoScrollChecked(value);
-    saveAutoScrollEnabled(value).then(() => router.refresh());
-  }
 
   useLockBodyScroll();
 
@@ -103,13 +88,13 @@ export default function BibleMenuDrawer({
 
           <ToggleRow
             label="성경읽기표 활성화"
-            checked={readingPlanChecked}
-            onChange={handleToggleReadingPlan}
+            checked={readingPlanEnabled}
+            onChange={onToggleReadingPlan}
           />
           <ToggleRow
             label="자동스크롤 활성화"
-            checked={autoScrollChecked}
-            onChange={handleToggleAutoScroll}
+            checked={autoScrollEnabled}
+            onChange={onToggleAutoScroll}
           />
           {/* 방해금지 모드는 안드로이드 기기 전용 기능이라 웹에는 없음 */}
         </div>

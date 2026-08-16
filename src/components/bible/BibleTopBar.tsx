@@ -4,6 +4,10 @@ import BibleLocationPicker from "@/components/bible/BibleLocationPicker";
 import BibleMenuDrawer from "@/components/bible/BibleMenuDrawer";
 import TranslationPickerSheet from "@/components/bible/TranslationPickerSheet";
 import {
+  saveAutoScrollEnabled,
+  saveReadingPlanEnabled,
+} from "@/lib/actions/bible/preferences";
+import {
   isChapterRead,
   toggleChapterRead,
 } from "@/lib/actions/bible/reading-progress";
@@ -34,6 +38,13 @@ export default function BibleTopBar({
 }) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // 서버에서 받은 초기값을 로컬 state로 들고 있다가, 토글하면 이 state를 즉시 바꾼다.
+  // router.refresh()로 서버를 다시 왕복하면 반영이 눈에 띄게 늦어지기 때문에,
+  // 쿠키 저장은 백그라운드로만 하고(기다리지 않음) 화면 반영은 로컬 state로 즉시 한다.
+  const [readingPlanOn, setReadingPlanOn] = useState(
+    Boolean(readingPlanEnabled),
+  );
+  const [autoScrollOn, setAutoScrollOn] = useState(Boolean(autoScrollEnabled));
   const [autoScrollSession, setAutoScrollSession] = useState<{
     key: string;
     active: boolean;
@@ -48,10 +59,6 @@ export default function BibleTopBar({
   } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // 장/절이 바뀌면(다른 화면으로 이동하면) 자동스크롤은 항상 꺼진 것으로 취급한다 -
-  // 안드로이드도 onBiblePageSettled에서 changed일 때 stopAutoScroll()을 호출하는 것과 동일.
-  // key가 지금 장과 일치할 때만 active 값을 인정하는 방식이라, effect에서 동기적으로
-  // setState를 호출할 필요가 없다.
   const isAutoScrolling =
     autoScrollSession?.key === `${bookId}-${chapter}` &&
     autoScrollSession.active;
@@ -63,11 +70,6 @@ export default function BibleTopBar({
     });
   }
 
-  // 실제 스크롤 루프. setInterval + 1px 점프 방식은 느린 속도일수록 초당 갱신 횟수가
-  // 적어져(예: 속도 1은 초당 8번) 사람 눈에 뚝뚝 끊겨 보인다("지지직"거리는 느낌).
-  // 그래서 화면 주사율에 맞춰 매 프레임 미세한 소수점 단위로 움직이는
-  // requestAnimationFrame 방식으로 바꿔서 항상 매끄럽게 움직이도록 한다.
-  // 속도 1~5에 대응하는 목표 속도(초당 px) - 나중에 실기기에서 느낌 보고 이 표만 조절하면 된다.
   const SPEED_TO_PX_PER_SEC: Record<number, number> = {
     1: 2,
     2: 4,
@@ -82,12 +84,6 @@ export default function BibleTopBar({
     if (!container || !content) return;
     const pxPerSec = SPEED_TO_PX_PER_SEC[scrollSpeed] ?? SPEED_TO_PX_PER_SEC[3];
 
-    // scrollTop을 프레임마다 같이 건드리면, 정수 경계를 넘는 순간 레이아웃(scrollTop)과
-    // 컴포지터(transform) 렌더링 타이밍이 완벽히 안 맞아서 미세하게 어긋나 보인다.
-    // 그래서 애니메이션 도중에는 scrollTop을 전혀 건드리지 않고, 본문과 스크롤바 썸을
-    // 모두 transform으로만 움직인다(네이티브 스크롤바는 CustomScrollbar가 숨겨둔 상태).
-    // 손가락 스크롤 중에는 CustomScrollbar의 scroll 리스너가 썸을 갱신하고, 자동스크롤
-    // 중에는 여기서 같은 rAF 루프 안에서 직접 갱신해 완전히 같은 타이밍으로 맞춘다.
     const baseScrollTop = container.scrollTop;
     const scrollHeight = container.scrollHeight;
     const clientHeight = container.clientHeight;
@@ -98,6 +94,7 @@ export default function BibleTopBar({
     );
     const maxThumbTravel = clientHeight - thumbHeight;
     const thumb = document.getElementById("bible-scroll-thumb");
+    if (thumb) thumb.style.opacity = "1";
     content.style.willChange = "transform";
 
     let rafId: number;
@@ -129,6 +126,11 @@ export default function BibleTopBar({
       content.style.transform = "";
       content.style.willChange = "";
       container.scrollTop = Math.round(baseScrollTop + traveled);
+      if (thumb) {
+        window.setTimeout(() => {
+          thumb.style.opacity = "0";
+        }, 800);
+      }
     };
   }, [isAutoScrolling, scrollSpeed]);
 
@@ -148,7 +150,7 @@ export default function BibleTopBar({
   }, [bookId, chapter, isLoggedIn]);
 
   useEffect(() => {
-    if (!isLoggedIn || !readingPlanEnabled) return;
+    if (!isLoggedIn || !readingPlanOn) return;
     let cancelled = false;
     isChapterRead(bookId, chapter).then((read) => {
       if (cancelled) return;
@@ -157,14 +159,22 @@ export default function BibleTopBar({
     return () => {
       cancelled = true;
     };
-  }, [bookId, chapter, isLoggedIn, readingPlanEnabled]);
+  }, [bookId, chapter, isLoggedIn, readingPlanOn]);
 
-  // 아직 새 장에 대한 fetch가 끝나기 전(또는 로그아웃 상태)에는 이전 장의 결과를
-  // 그대로 쓰지 않도록, key가 지금 장과 일치할 때만 아이콘을 켠다.
   const hasSermon =
     sermonResult?.key === `${bookId}-${chapter}` && sermonResult.hasSermon;
   const isRead =
     readResult?.key === `${bookId}-${chapter}` && readResult.isRead;
+
+  function handleToggleReadingPlan(value: boolean) {
+    setReadingPlanOn(value);
+    saveReadingPlanEnabled(value);
+  }
+
+  function handleToggleAutoScroll(value: boolean) {
+    setAutoScrollOn(value);
+    saveAutoScrollEnabled(value);
+  }
 
   function handleReadingPlanCheckClick() {
     if (!isLoggedIn) return;
@@ -208,7 +218,7 @@ export default function BibleTopBar({
         </Link>
       )}
 
-      {readingPlanEnabled && (
+      {readingPlanOn && (
         <button
           type="button"
           onClick={handleReadingPlanCheckClick}
@@ -225,12 +235,12 @@ export default function BibleTopBar({
 
       <div className="flex-1" />
 
-      {autoScrollEnabled && (
+      {autoScrollOn && (
         <button
           type="button"
           onClick={toggleAutoScroll}
           aria-label="자동 스크롤"
-          className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90 cursor-pointer"
+          className="ml-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-90"
         >
           {isAutoScrolling ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
@@ -285,31 +295,13 @@ export default function BibleTopBar({
 
       {isMenuOpen && (
         <BibleMenuDrawer
-          readingPlanEnabled={Boolean(readingPlanEnabled)}
-          autoScrollEnabled={Boolean(autoScrollEnabled)}
+          readingPlanEnabled={readingPlanOn}
+          autoScrollEnabled={autoScrollOn}
+          onToggleReadingPlan={handleToggleReadingPlan}
+          onToggleAutoScroll={handleToggleAutoScroll}
           onClose={() => setIsMenuOpen(false)}
         />
       )}
     </header>
-  );
-}
-
-function TopBarIconButton({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-90 cursor-pointer"
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
-        {children}
-      </svg>
-    </button>
   );
 }

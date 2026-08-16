@@ -2,31 +2,30 @@
 
 import { useEffect } from "react";
 
-/**
- * 직접 그리는 스크롤바 썸. 네이티브 스크롤바는 정수 픽셀 단위로만 움직이고
- * transform 기반 애니메이션과 타이밍이 안 맞아서, 이 썸을 대신 그린다.
- *
- * - 손가락 스크롤(또는 마우스 휠) 중에는 이 컴포넌트의 scroll 리스너가 위치를 갱신한다.
- * - 자동스크롤 중에는 BibleTopBar가 같은 rAF 루프 안에서 이 썸의 transform을
- *   직접 갱신한다(둘 다 #bible-scroll-thumb id를 통해 통신).
- *
- * 나중에 "스크롤바 숨기기" 설정이 생기면, 이 컴포넌트를 조건부로 렌더링하지 않기만
- * 하면 된다 - 자동스크롤 애니메이션 로직과는 완전히 분리되어 있다.
- */
 export default function CustomScrollbar() {
   useEffect(() => {
     const container = document.getElementById("bible-scroll-container");
     const thumb = document.getElementById("bible-scroll-thumb");
     if (!container || !thumb) return;
 
-    function update() {
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function showThenScheduleHide() {
+      thumb!.style.opacity = "1";
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        thumb!.style.opacity = "0";
+      }, 800);
+    }
+
+    // 위치/크기만 다시 계산 - 보이기/숨기기는 건드리지 않는다.
+    function syncPosition() {
       const scrollHeight = container!.scrollHeight;
       const clientHeight = container!.clientHeight;
       if (scrollHeight <= clientHeight) {
         thumb!.style.opacity = "0";
         return;
       }
-      thumb!.style.opacity = "1";
 
       const trackHeight = clientHeight;
       const thumbHeight = Math.max(
@@ -42,21 +41,31 @@ export default function CustomScrollbar() {
       thumb!.style.transform = `translateY(${thumbTop}px)`;
     }
 
-    update();
-    container.addEventListener("scroll", update, { passive: true });
-    const resizeObserver = new ResizeObserver(update);
+    // 실제로 스크롤됐을 때만 - 위치 갱신 + 보이기.
+    function handleScroll() {
+      syncPosition();
+      showThenScheduleHide();
+    }
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    // ResizeObserver는 관찰을 시작하자마자 스크롤 여부와 무관하게 최초 1번은
+    // 무조건 콜백을 호출하는 스펙이 있어서, 여기서는 위치만 조용히 맞추고
+    // 스크롤바를 보이게 하지는 않는다 - 안 그러면 페이지 로딩 직후 스크롤바가
+    // 실제로는 아무 스크롤도 없었는데 잠깐 나타났다 사라지는 문제가 있었다.
+    const resizeObserver = new ResizeObserver(syncPosition);
     resizeObserver.observe(container);
 
     return () => {
-      container.removeEventListener("scroll", update);
+      container.removeEventListener("scroll", handleScroll);
       resizeObserver.disconnect();
+      if (hideTimer) clearTimeout(hideTimer);
     };
   }, []);
 
   return (
     <div
       id="bible-scroll-thumb"
-      className="pointer-events-none absolute right-0 top-0 w-1 rounded-full bg-black/25"
+      className="pointer-events-none absolute right-0 top-0 w-1 rounded-full bg-black/25 opacity-0 transition-opacity duration-200"
       style={{ height: 24 }}
     />
   );
