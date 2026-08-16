@@ -83,3 +83,12 @@ body {
 html {
   scrollbar-width: thin;
 }
+
+/* 장 전환이 확정된 순간부터 새 화면이 완전히 뜰 때까지, 그 짧은 사이 구간 동안
+   상단바/성경 본문 영역의 터치·클릭을 잠깐 막는다. 이 구간에 또 스와이프하거나
+   피커를 여는 등 다른 동작을 하면 예전 화면과 새 화면이 서로 꼬여서 부자연스러워
+   보이던 문제를 막기 위함. */
+body.chapter-transitioning #bible-swipe-viewport,
+body.chapter-transitioning header {
+  pointer-events: none;
+}

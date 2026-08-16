@@ -2,6 +2,7 @@
 
 import BibleLocationPicker from "@/components/bible/BibleLocationPicker";
 import BibleMenuDrawer from "@/components/bible/BibleMenuDrawer";
+import { getCachedVerseCounts } from "@/components/bible/BookChapterPickerSheet";
 import TranslationPickerSheet from "@/components/bible/TranslationPickerSheet";
 import {
   saveAutoScrollEnabled,
@@ -160,6 +161,12 @@ export default function BibleTopBar({
       cancelled = true;
     };
   }, [bookId, chapter, isLoggedIn, readingPlanOn]);
+
+  // 성경 위치 피커를 열기 전에 미리 절 개수 표를 백그라운드로 받아둔다 - 그러면
+  // 사용자가 실제로 피커를 열었을 때 이미 캐시에 있어서 첫 열람도 즉시 뜬다.
+  useEffect(() => {
+    getCachedVerseCounts(translation);
+  }, [translation]);
 
   const hasSermon =
     sermonResult?.key === `${bookId}-${chapter}` && sermonResult.hasSermon;

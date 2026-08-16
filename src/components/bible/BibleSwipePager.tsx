@@ -9,6 +9,86 @@ import { nextChapter, previousChapter } from "@/lib/bible/bible-books";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+// 브라우저 메모리에 계속 남는 캐시 - BibleSwipePager가 마운트/언마운트를 반복해도
+// (장을 넘길 때마다 새 인스턴스가 뜬다) 한 번 가져온 장은 다시 안 가져온다.
+const peekCache = new Map<string, ChapterPeek | null>();
+
+export function peekCacheKey(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+) {
+  return `${bookId}-${chapter}-${translation}-${secondary ?? ""}`;
+}
+
+export async function getCachedChapterPeek(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+): Promise<ChapterPeek | null> {
+  const key = peekCacheKey(bookId, chapter, translation, secondary);
+  if (peekCache.has(key)) return peekCache.get(key)!;
+  const peek = await getChapterPeek(bookId, chapter, translation, secondary);
+  peekCache.set(key, peek);
+  return peek;
+}
+
+/** 이미 캐시에 있으면 즉시(동기) 돌려준다. 없으면 undefined. */
+export function getCachedChapterPeekSync(
+  bookId: number,
+  chapter: number,
+  translation: string,
+  secondary?: string,
+): ChapterPeek | null | undefined {
+  return peekCache.get(peekCacheKey(bookId, chapter, translation, secondary));
+}
+
+/** 전환이 확정된 순간부터 새 화면이 완전히 뜰 때까지 상단바/본문 터치를 잠깐 막는다.
+ * 새 페이지가 마운트되면(아래 peek 조회 effect가 새로 실행되는 시점) 자동으로 풀리고,
+ * 혹시 네비게이션이 실패하는 등의 이유로 못 풀리는 경우를 대비해 최대 3초 후엔
+ * 무조건 풀리는 안전장치도 둔다. */
+function lockDuringTransition() {
+  document.body.classList.add("chapter-transitioning");
+  window.setTimeout(() => {
+    document.body.classList.remove("chapter-transitioning");
+  }, 3000);
+}
+
+function unlockTransition() {
+  document.body.classList.remove("chapter-transitioning");
+}
+
+/**
+ * 하단바의 이전/다음 장 버튼처럼, 스와이프가 아니라 버튼 클릭으로 장을 넘길 때도
+ * 스와이프와 똑같은 슬라이드 전환 + 미리보기 방식을 쓰기 위한 함수. BibleSwipePager가
+ * 이미 옆 장을 캐시에 데워뒀을 가능성이 높으므로(항상 ±3까지 미리 데워둔다), 대부분의
+ * 경우 실제 이동 전에 진짜 내용이 슬라이드로 미리 보인다.
+ */
+export function animateChapterTransition(
+  router: { push: (href: string) => void },
+  direction: "prev" | "next",
+  href: string,
+  destTitle?: string,
+) {
+  const track = document.getElementById("bible-swipe-track");
+  const titleEl = document.getElementById("bible-location-title");
+
+  if (!track) {
+    // 성경 읽기 화면이 아니라면(이론상 안 일어나야 하지만 방어적으로) 그냥 이동한다.
+    router.push(href);
+    return;
+  }
+
+  track.style.transition = "transform 200ms ease-out";
+  track.style.transform = `translateX(${direction === "prev" ? window.innerWidth : -window.innerWidth}px)`;
+  if (titleEl && destTitle) titleEl.textContent = destTitle;
+
+  lockDuringTransition();
+  window.setTimeout(() => router.push(href), 190);
+}
+
 /**
  * 안드로이드 ViewPager2처럼 옆 장의 실제 내용을 미리 가져와 화면 밖(좌우)에 대기시켜
  * 두고, 스와이프하면 그 준비된 내용이 바로 따라오게 한다. 놓아서 전환이 확정되면
@@ -66,6 +146,10 @@ export default function BibleSwipePager({
   }, [nextPeek]);
 
   useEffect(() => {
+    // 이 effect가 실행됐다는 건 (bookId/chapter가 바뀌어) 새 화면이 실제로 떴다는
+    // 뜻이므로, 전환 중 걸어뒀던 입력 잠금을 여기서 푼다.
+    unlockTransition();
+
     const params = new URLSearchParams();
     if (translation) params.set("translation", translation);
     if (secondary) params.set("secondary", secondary);
@@ -196,12 +280,14 @@ export default function BibleSwipePager({
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         horizontalLock = Math.abs(dx) > Math.abs(dy);
         if (!horizontalLock) {
+          // 세로 방향이면 평소처럼 세로 스크롤되게 그냥 둔다.
           dragging = false;
           return;
         }
       }
       if (!horizontalLock) return;
 
+      // 더 넘어갈 장이 없는 방향(첫 장/마지막 장)이면 살짝만 저항감 있게 따라오게.
       let clamped = dx;
       if (dx > 0 && !prevHrefRef.current) clamped = dx * 0.25;
       if (dx < 0 && !nextHrefRef.current) clamped = dx * 0.25;
@@ -244,12 +330,14 @@ export default function BibleSwipePager({
         if (titleEl && prevPeekRef.current) {
           titleEl.textContent = prevPeekRef.current.title;
         }
+        lockDuringTransition();
         window.setTimeout(() => router.push(prevHrefRef.current!), 190);
       } else if (passedThreshold && currentX < 0 && nextHrefRef.current) {
         track!.style.transform = `translateX(-${window.innerWidth}px)`;
         if (titleEl && nextPeekRef.current) {
           titleEl.textContent = nextPeekRef.current.title;
         }
+        lockDuringTransition();
         window.setTimeout(() => router.push(nextHrefRef.current!), 190);
       } else {
         track!.style.transform = "translateX(0px)";
@@ -290,67 +378,4 @@ export default function BibleSwipePager({
       </div>
     </div>
   );
-}
-
-// 브라우저 메모리에 계속 남는 캐시 - BibleSwipePager가 마운트/언마운트를 반복해도
-// (장을 넘길 때마다 새 인스턴스가 뜬다) 한 번 가져온 장은 다시 안 가져온다.
-const peekCache = new Map<string, ChapterPeek | null>();
-
-export function peekCacheKey(
-  bookId: number,
-  chapter: number,
-  translation: string,
-  secondary?: string,
-) {
-  return `${bookId}-${chapter}-${translation}-${secondary ?? ""}`;
-}
-
-export async function getCachedChapterPeek(
-  bookId: number,
-  chapter: number,
-  translation: string,
-  secondary?: string,
-): Promise<ChapterPeek | null> {
-  const key = peekCacheKey(bookId, chapter, translation, secondary);
-  if (peekCache.has(key)) return peekCache.get(key)!;
-  const peek = await getChapterPeek(bookId, chapter, translation, secondary);
-  peekCache.set(key, peek);
-  return peek;
-}
-
-/** 이미 캐시에 있으면 즉시(동기) 돌려준다. 없으면 undefined. */
-export function getCachedChapterPeekSync(
-  bookId: number,
-  chapter: number,
-  translation: string,
-  secondary?: string,
-): ChapterPeek | null | undefined {
-  return peekCache.get(peekCacheKey(bookId, chapter, translation, secondary));
-}
-
-/**
- * 하단바의 이전/다음 장 버튼처럼, 스와이프가 아니라 버튼 클릭으로 장을 넘길 때도
- * 스와이프와 똑같은 슬라이드 전환 + 미리보기 방식을 쓰기 위한 함수. BibleSwipePager가
- * 이미 옆 장을 캐시에 데워뒀을 가능성이 높으므로(항상 ±2까지 미리 데워둔다), 대부분의
- * 경우 실제 이동 전에 진짜 내용이 슬라이드로 미리 보인다.
- */
-export function animateChapterTransition(
-  router: { push: (href: string) => void },
-  direction: "prev" | "next",
-  href: string,
-  destTitle?: string,
-) {
-  const track = document.getElementById("bible-swipe-track");
-  const titleEl = document.getElementById("bible-location-title");
-
-  if (!track) {
-    router.push(href);
-    return;
-  }
-
-  track.style.transition = "transform 200ms ease-out";
-  track.style.transform = `translateX(${direction === "prev" ? window.innerWidth : -window.innerWidth}px)`;
-  if (titleEl && destTitle) titleEl.textContent = destTitle;
-
-  window.setTimeout(() => router.push(href), 190);
 }
