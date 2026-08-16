@@ -9,12 +9,12 @@ import { toggleBookmark } from "@/lib/actions/bible/bible-actions";
 import {
   applyPartialHighlight,
   applyVerseHighlight,
+  removePartialHighlight,
   removeVerseHighlight,
   type HighlightRange,
   type HighlightRangeMap,
 } from "@/lib/actions/bible/highlights";
 import { createScraps } from "@/lib/actions/bible/scraps";
-import { getVerseInteractionState } from "@/lib/actions/bible/verse-interaction";
 import type { WordMemoRow } from "@/lib/actions/bible/word-memos";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
@@ -169,18 +169,87 @@ export default function VerseList({
   // 사용자별 Supabase 조회라 시간이 걸리므로, 화면을 막지 않고 마운트된 뒤 따로 가져와서
   // 채운다 — 안드로이드처럼 본문이 먼저 보이고 하이라이트가 살짝 늦게 입혀지는 느낌.
   useEffect(() => {
-    if (!isLoggedIn) return;
-    let cancelled = false;
-    getVerseInteractionState(translation, bookId, chapter).then((state) => {
-      if (cancelled) return;
-      setHighlightRanges(state.highlightRanges);
-      setWordMemos(state.wordMemos);
-      setMemoVerses(new Set(state.memoVerseNumbers));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoggedIn, translation, bookId, chapter]);
+    function handleSelectionChange() {
+      // 절 전체를 선택한 상태(번호/절 탭해서 선택)에서는 텍스트 드래그 선택을 아예
+      // 무시한다 - 두 선택 모드가 동시에 활성화되면 툴바가 서로 충돌한다.
+      if (mode === "selection") {
+        window.getSelection()?.removeAllRanges();
+        return;
+      }
+
+      const selection = window.getSelection();
+      console.log("[selection-debug] selectionchange fired", {
+        hasSelection: !!selection,
+        rangeCount: selection?.rangeCount,
+        isCollapsed: selection?.isCollapsed,
+        text: selection?.toString(),
+      });
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        setPendingSelection(null);
+        if (mode === "textSelection") setMode("none");
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const anchorNode = range.commonAncestorContainer;
+      const anchorEl =
+        anchorNode.nodeType === Node.TEXT_NODE
+          ? anchorNode.parentElement
+          : (anchorNode as Element);
+      const container = anchorEl?.closest(
+        "[data-highlight-container]",
+      ) as HTMLElement | null;
+
+      console.log("[selection-debug] container check", {
+        anchorNodeType: anchorNode.nodeType,
+        anchorElTag: anchorEl?.tagName,
+        foundContainer: !!container,
+      });
+
+      if (
+        !container ||
+        !container.contains(range.startContainer) ||
+        !container.contains(range.endContainer)
+      ) {
+        console.log("[selection-debug] no valid container, bailing out", {
+          containerContainsStart: container?.contains(range.startContainer),
+          containerContainsEnd: container?.contains(range.endContainer),
+        });
+        setPendingSelection(null);
+        if (mode === "textSelection") setMode("none");
+        return;
+      }
+
+      const verse = Number(container.dataset.verse);
+      const segment = Number(container.dataset.segment);
+
+      const preRange = document.createRange();
+      preRange.selectNodeContents(container);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const start = preRange.toString().length;
+      const end = start + range.toString().length;
+
+      console.log("[selection-debug] computed offsets", {
+        verse,
+        segment,
+        start,
+        end,
+      });
+
+      if (start === end) {
+        setPendingSelection(null);
+        return;
+      }
+
+      setPendingSelection({ verse, segment, start, end });
+      setMode("textSelection");
+      console.log("[selection-debug] mode set to textSelection");
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () =>
+      document.removeEventListener("selectionchange", handleSelectionChange);
+  }, [mode]);
 
   function clearBrowserSelection() {
     window.getSelection()?.removeAllRanges();
@@ -335,6 +404,43 @@ export default function VerseList({
       clearSelection();
     });
   }
+
+  function handleRemovePartialHighlight() {
+    if (!pendingSelection) return;
+    const { verse, segment, start, end } = pendingSelection;
+
+    startTransition(async () => {
+      await removePartialHighlight(
+        bookId,
+        chapter,
+        verse,
+        translation,
+        segment,
+        start,
+        end,
+      );
+      setHighlightRanges((prev) => {
+        const key = `${verse}-${segment}`;
+        const next = { ...prev };
+        next[key] = (next[key] ?? []).filter(
+          (r) => end <= r.start || start >= r.end,
+        );
+        return next;
+      });
+      clearSelection();
+    });
+  }
+
+  const hasExistingPartialHighlight = pendingSelection
+    ? (
+        highlightRanges[
+          `${pendingSelection.verse}-${pendingSelection.segment}`
+        ] ?? []
+      ).some(
+        (r) =>
+          !(pendingSelection.end <= r.start || pendingSelection.start >= r.end),
+      )
+    : false;
 
   function handleWordMemoAction() {
     if (!pendingSelection) return;
@@ -657,6 +763,11 @@ export default function VerseList({
         <ColorPickerBar
           onCancel={clearSelection}
           onPick={handlePartialHighlightColor}
+          onRemove={
+            hasExistingPartialHighlight
+              ? handleRemovePartialHighlight
+              : undefined
+          }
           disabled={isPending}
         />
       )}

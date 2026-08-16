@@ -199,6 +199,45 @@ export async function applyPartialHighlight(
   return { id: data.id, segment, start, end, colorHex };
 }
 
+export async function removePartialHighlight(
+  bookId: number,
+  chapter: number,
+  verse: number,
+  translation: string,
+  segment: number,
+  start: number,
+  end: number,
+): Promise<void> {
+  const { supabase, user } = await requireUser();
+
+  // 삭제 대상 후보(같은 절/세그먼트)를 가져온 다음, 선택 범위와 겹치는 것만 지운다.
+  const { data, error: selectError } = await supabase
+    .from("partial_highlight")
+    .select("id, start_offset, end_offset")
+    .eq("member_id", user.id)
+    .eq("translation", translation)
+    .eq("book_id", bookId)
+    .eq("chapter", chapter)
+    .eq("verse", verse)
+    .eq("segment", segment);
+
+  if (selectError) throw selectError;
+
+  const overlappingIds = (data ?? [])
+    .filter((r) => !(end <= r.start_offset || start >= r.end_offset))
+    .map((r) => r.id);
+
+  if (overlappingIds.length > 0) {
+    const { error } = await supabase
+      .from("partial_highlight")
+      .delete()
+      .in("id", overlappingIds);
+    if (error) throw error;
+  }
+
+  revalidatePath(`/bible/${bookId}/${chapter}`);
+}
+
 
 export type HighlightedBookRow = { bookId: number; bookName: string; count: number };
 
