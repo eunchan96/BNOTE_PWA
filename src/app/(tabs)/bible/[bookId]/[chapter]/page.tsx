@@ -2,6 +2,7 @@ import BibleTopBar from "@/components/bible/BibleTopBar";
 import CustomScrollbar from "@/components/bible/CustomScrollbar";
 import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
 import ScrollToVerse from "@/components/bible/ScrollToVerse";
+import SwipeChapterNav from "@/components/bible/SwipeChapterNav";
 import VerseList from "@/components/bible/VerseList";
 import {
   getAutoScrollEnabled,
@@ -95,7 +96,7 @@ export default async function BibleChapterPage({
         scrollSpeed={scrollSpeed}
       />
 
-      <div className="relative min-h-0 flex-1">
+      <div id="bible-swipe-wrapper" className="relative min-h-0 flex-1">
         <div
           id="bible-scroll-container"
           className="scrollbar-hide h-full overflow-y-auto overscroll-contain"
@@ -122,6 +123,13 @@ export default async function BibleChapterPage({
         </div>
         <CustomScrollbar />
       </div>
+
+      <SwipeChapterNav
+        bookId={bookId}
+        chapter={chapter}
+        translation={translation}
+        secondary={secondary}
+      />
     </div>
   );
 }
