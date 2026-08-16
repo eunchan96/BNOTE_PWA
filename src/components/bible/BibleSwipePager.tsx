@@ -79,16 +79,51 @@ export default function BibleSwipePager({
       : null;
 
     if (prev && prevKey) {
-      getChapterPeek(prev.bookId, prev.chapter, translation, secondary).then(
-        (peek) => setPrevPeekResult({ key: prevKey, peek }),
-      );
+      getCachedChapterPeek(
+        prev.bookId,
+        prev.chapter,
+        translation,
+        secondary,
+      ).then((peek) => setPrevPeekResult({ key: prevKey, peek }));
       if (prevHrefRef.current) router.prefetch(prevHrefRef.current);
+
+      // 한두 걸음 더 앞(±3)도 미리 캐시에 데워둔다 - 화면엔 안 보이지만, 손가락으로
+      // 연속해서 빠르게 넘길 때(마우스 드래그보다 훨씬 빠름) 캐시가 못 따라가서 빈
+      // 화면이 잠깐 뜨는 걸 줄이기 위함.
+      let cursor = prev;
+      for (let i = 0; i < 2; i++) {
+        const further = previousChapter(cursor.bookId, cursor.chapter);
+        if (!further) break;
+        getCachedChapterPeek(
+          further.bookId,
+          further.chapter,
+          translation,
+          secondary,
+        );
+        cursor = further;
+      }
     }
     if (next && nextKey) {
-      getChapterPeek(next.bookId, next.chapter, translation, secondary).then(
-        (peek) => setNextPeekResult({ key: nextKey, peek }),
-      );
+      getCachedChapterPeek(
+        next.bookId,
+        next.chapter,
+        translation,
+        secondary,
+      ).then((peek) => setNextPeekResult({ key: nextKey, peek }));
       if (nextHrefRef.current) router.prefetch(nextHrefRef.current);
+
+      let cursor = next;
+      for (let i = 0; i < 2; i++) {
+        const further = nextChapter(cursor.bookId, cursor.chapter);
+        if (!further) break;
+        getCachedChapterPeek(
+          further.bookId,
+          further.chapter,
+          translation,
+          secondary,
+        );
+        cursor = further;
+      }
     }
   }, [bookId, chapter, translation, secondary, router]);
 

@@ -581,11 +581,7 @@ export default function VerseList({
             isFirstVerse && !verse.title && !bookPartLabel;
 
           return (
-            <li
-              key={verse.verse}
-              id={`verse-${verse.verse}`}
-              className="scroll-mt-14"
-            >
+            <li key={verse.verse} id={`verse-${verse.verse}`}>
               <div
                 role="button"
                 tabIndex={0}
