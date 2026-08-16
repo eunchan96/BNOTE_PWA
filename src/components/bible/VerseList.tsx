@@ -96,9 +96,9 @@ function renderColoredTextUnsafe(
   let start = 0;
   let currentColor = colors[0] ?? null;
   let currentUnderline = underline[0] ?? false;
-  for (let i = 1; i <= text.length; i++) {
-    const c = i < text.length ? colors[i] : null;
-    const u = i < text.length ? underline[i] : false;
+  for (let i = 1; i < text.length; i++) {
+    const c = colors[i];
+    const u = underline[i];
     if (c !== currentColor || u !== currentUnderline) {
       chunks.push({
         text: text.slice(start, i),
@@ -109,6 +109,18 @@ function renderColoredTextUnsafe(
       currentColor = c;
       currentUnderline = u;
     }
+  }
+  // 마지막 남은 조각은 항상 무조건 밀어넣는다. 예전에는 "다음 글자와 스타일이 다르면
+  // 자른다"는 조건 하나에만 기대고 있었는데, 마지막 조각이 "스타일 없음" 상태이고
+  // 그 비교 대상(경계)도 우연히 "스타일 없음"이면 조건이 한 번도 발동하지 않아서
+  // 마지막 조각 전체가 통째로 유실됐다 - 하이라이트/메모 뒤에 스타일 없는 텍스트가
+  // 남는 흔한 경우(예: 문장 끝부분)에 정확히 이 문제가 났다.
+  if (text.length > 0) {
+    chunks.push({
+      text: text.slice(start),
+      color: currentColor,
+      underline: currentUnderline,
+    });
   }
 
   return chunks.map((chunk, i) => {
