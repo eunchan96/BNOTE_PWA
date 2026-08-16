@@ -8,11 +8,6 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(prefix),
   );
 
-  // 보호되지 않은 경로(성경 읽기, 로그인 화면 등)는 Auth 네트워크 호출 자체를 건너뛴다.
-  if (!isProtected) {
-    return NextResponse.next({ request });
-  }
-
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -34,11 +29,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // 로그인 토큰 갱신은 항상 실행한다(보호되지 않은 경로 포함) - 안 그러면 성경 읽기
+  // 화면처럼 가장 자주 머무는 곳에서는 갱신이 안 일어나서, 오래 머물수록 토큰이
+  // 슬금슬금 만료되고 이후 서버 액션의 로그인 확인이 조용히 실패하게 된다.
+  // 로그인 안 했을 때 로그인 화면으로 보내는(redirect) 건 보호된 경로에서만 한다.
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session?.user) {
+  if (isProtected && !session?.user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set(
       'next',

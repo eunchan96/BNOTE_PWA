@@ -15,6 +15,7 @@ import {
   type HighlightRangeMap,
 } from "@/lib/actions/bible/highlights";
 import { createScraps } from "@/lib/actions/bible/scraps";
+import { getVerseInteractionState } from "@/lib/actions/bible/verse-interaction";
 import type { WordMemoRow } from "@/lib/actions/bible/word-memos";
 import type { BibleVerseRow, RawVerseRow } from "@/lib/bible/bible";
 import { chapterUnit, getBook } from "@/lib/bible/bible-books";
@@ -169,6 +170,27 @@ export default function VerseList({
   // 사용자별 Supabase 조회라 시간이 걸리므로, 화면을 막지 않고 마운트된 뒤 따로 가져와서
   // 채운다 — 안드로이드처럼 본문이 먼저 보이고 하이라이트가 살짝 늦게 입혀지는 느낌.
   useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    getVerseInteractionState(translation, bookId, chapter)
+      .then((state) => {
+        if (cancelled) return;
+        setHighlightRanges(state.highlightRanges);
+        setWordMemos(state.wordMemos);
+        setMemoVerses(new Set(state.memoVerseNumbers));
+      })
+      .catch((err) => {
+        // 이전에는 여기서 실패해도 아무 표시 없이 조용히 빈 상태로 남았다 -
+        // 하이라이트/메모가 "그냥 안 보이는" 것처럼 보인 원인 중 하나.
+        console.error("getVerseInteractionState failed", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, translation, bookId, chapter]);
+
+  // 드래그로 텍스트를 선택하면(절 하나 안에서만) 하단 툴바를 "텍스트 선택" 모드로 바꾼다.
+  useEffect(() => {
     function handleSelectionChange() {
       // 절 전체를 선택한 상태(번호/절 탭해서 선택)에서는 텍스트 드래그 선택을 아예
       // 무시한다 - 두 선택 모드가 동시에 활성화되면 툴바가 서로 충돌한다.
@@ -178,12 +200,6 @@ export default function VerseList({
       }
 
       const selection = window.getSelection();
-      console.log("[selection-debug] selectionchange fired", {
-        hasSelection: !!selection,
-        rangeCount: selection?.rangeCount,
-        isCollapsed: selection?.isCollapsed,
-        text: selection?.toString(),
-      });
       if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
         setPendingSelection(null);
         if (mode === "textSelection") setMode("none");
@@ -200,21 +216,11 @@ export default function VerseList({
         "[data-highlight-container]",
       ) as HTMLElement | null;
 
-      console.log("[selection-debug] container check", {
-        anchorNodeType: anchorNode.nodeType,
-        anchorElTag: anchorEl?.tagName,
-        foundContainer: !!container,
-      });
-
       if (
         !container ||
         !container.contains(range.startContainer) ||
         !container.contains(range.endContainer)
       ) {
-        console.log("[selection-debug] no valid container, bailing out", {
-          containerContainsStart: container?.contains(range.startContainer),
-          containerContainsEnd: container?.contains(range.endContainer),
-        });
         setPendingSelection(null);
         if (mode === "textSelection") setMode("none");
         return;
@@ -229,13 +235,6 @@ export default function VerseList({
       const start = preRange.toString().length;
       const end = start + range.toString().length;
 
-      console.log("[selection-debug] computed offsets", {
-        verse,
-        segment,
-        start,
-        end,
-      });
-
       if (start === end) {
         setPendingSelection(null);
         return;
@@ -243,7 +242,6 @@ export default function VerseList({
 
       setPendingSelection({ verse, segment, start, end });
       setMode("textSelection");
-      console.log("[selection-debug] mode set to textSelection");
     }
 
     document.addEventListener("selectionchange", handleSelectionChange);
