@@ -69,32 +69,67 @@ export default function BibleTopBar({
   // requestAnimationFrame 방식으로 바꿔서 항상 매끄럽게 움직이도록 한다.
   // 속도 1~5에 대응하는 목표 속도(초당 px) - 나중에 실기기에서 느낌 보고 이 표만 조절하면 된다.
   const SPEED_TO_PX_PER_SEC: Record<number, number> = {
-    1: 8,
-    2: 16,
-    3: 26,
-    4: 40,
-    5: 60,
+    1: 2,
+    2: 4,
+    3: 7,
+    4: 12,
+    5: 20,
   };
   useEffect(() => {
     if (!isAutoScrolling) return;
-    const el = document.getElementById("bible-scroll-container");
-    if (!el) return;
+    const container = document.getElementById("bible-scroll-container");
+    const content = document.getElementById("bible-scroll-content");
+    if (!container || !content) return;
     const pxPerSec = SPEED_TO_PX_PER_SEC[scrollSpeed] ?? SPEED_TO_PX_PER_SEC[3];
+
+    // scrollTop을 프레임마다 같이 건드리면, 정수 경계를 넘는 순간 레이아웃(scrollTop)과
+    // 컴포지터(transform) 렌더링 타이밍이 완벽히 안 맞아서 미세하게 어긋나 보인다.
+    // 그래서 애니메이션 도중에는 scrollTop을 전혀 건드리지 않고, 본문과 스크롤바 썸을
+    // 모두 transform으로만 움직인다(네이티브 스크롤바는 CustomScrollbar가 숨겨둔 상태).
+    // 손가락 스크롤 중에는 CustomScrollbar의 scroll 리스너가 썸을 갱신하고, 자동스크롤
+    // 중에는 여기서 같은 rAF 루프 안에서 직접 갱신해 완전히 같은 타이밍으로 맞춘다.
+    const baseScrollTop = container.scrollTop;
+    const scrollHeight = container.scrollHeight;
+    const clientHeight = container.clientHeight;
+    const maxScrollTop = Math.max(1, scrollHeight - clientHeight);
+    const thumbHeight = Math.max(
+      24,
+      (clientHeight / scrollHeight) * clientHeight,
+    );
+    const maxThumbTravel = clientHeight - thumbHeight;
+    const thumb = document.getElementById("bible-scroll-thumb");
+    content.style.willChange = "transform";
 
     let rafId: number;
     let lastTime: number | null = null;
+    let traveled = 0;
 
     function step(time: number) {
       if (lastTime !== null) {
         const deltaSeconds = (time - lastTime) / 1000;
-        el!.scrollTop += pxPerSec * deltaSeconds;
+        traveled += pxPerSec * deltaSeconds;
+        content!.style.transform = `translateY(${-traveled}px)`;
+
+        if (thumb) {
+          const currentScrollTop = Math.min(
+            maxScrollTop,
+            baseScrollTop + traveled,
+          );
+          const ratio = currentScrollTop / maxScrollTop;
+          thumb.style.transform = `translateY(${ratio * maxThumbTravel}px)`;
+        }
       }
       lastTime = time;
       rafId = requestAnimationFrame(step);
     }
     rafId = requestAnimationFrame(step);
 
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      cancelAnimationFrame(rafId);
+      content.style.transform = "";
+      content.style.willChange = "";
+      container.scrollTop = Math.round(baseScrollTop + traveled);
+    };
   }, [isAutoScrolling, scrollSpeed]);
 
   useEffect(() => {
@@ -179,7 +214,7 @@ export default function BibleTopBar({
           onClick={handleReadingPlanCheckClick}
           disabled={isPending}
           aria-label="성경읽기표 완료 체크"
-          className="ml-2 shrink-0"
+          className="ml-2 shrink-0 cursor-pointer"
           style={{ opacity: isRead ? 1 : 0.4 }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
@@ -195,7 +230,7 @@ export default function BibleTopBar({
           type="button"
           onClick={toggleAutoScroll}
           aria-label="자동 스크롤"
-          className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90"
+          className="ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full opacity-90 cursor-pointer"
         >
           {isAutoScrolling ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">

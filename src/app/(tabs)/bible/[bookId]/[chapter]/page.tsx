@@ -1,4 +1,5 @@
 import BibleTopBar from "@/components/bible/BibleTopBar";
+import CustomScrollbar from "@/components/bible/CustomScrollbar";
 import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
 import ScrollToVerse from "@/components/bible/ScrollToVerse";
 import VerseList from "@/components/bible/VerseList";
@@ -94,26 +95,32 @@ export default async function BibleChapterPage({
         scrollSpeed={scrollSpeed}
       />
 
-      <div
-        id="bible-scroll-container"
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-      >
-        <div className="mx-auto flex w-full max-w-2xl flex-col pb-2">
-          <SaveLastReadLocation
-            bookId={bookId}
-            chapter={chapter}
-            verse={targetVerse}
-          />
-          <ScrollToVerse verse={targetVerse} />
-          <VerseList
-            bookId={bookId}
-            chapter={chapter}
-            translation={translation}
-            verses={verses}
-            secondaryVerses={secondaryVerses}
-            isLoggedIn={Boolean(user)}
-          />
+      <div className="relative min-h-0 flex-1">
+        <div
+          id="bible-scroll-container"
+          className="scrollbar-hide h-full overflow-y-auto overscroll-contain"
+        >
+          <div
+            id="bible-scroll-content"
+            className="mx-auto flex w-full max-w-2xl flex-col pb-2"
+          >
+            <SaveLastReadLocation
+              bookId={bookId}
+              chapter={chapter}
+              verse={targetVerse}
+            />
+            <ScrollToVerse verse={targetVerse} />
+            <VerseList
+              bookId={bookId}
+              chapter={chapter}
+              translation={translation}
+              verses={verses}
+              secondaryVerses={secondaryVerses}
+              isLoggedIn={Boolean(user)}
+            />
+          </div>
         </div>
+        <CustomScrollbar />
       </div>
     </div>
   );
