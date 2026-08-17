@@ -2,6 +2,7 @@
 
 import BibleSwipePager, {
   animateChapterTransition,
+  getCachedChapterPeek,
   getCachedChapterPeekSync,
 } from "@/components/bible/BibleSwipePager";
 import BibleTopBar from "@/components/bible/BibleTopBar";
@@ -9,10 +10,7 @@ import CustomScrollbar from "@/components/bible/CustomScrollbar";
 import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
 import ScrollToVerse from "@/components/bible/ScrollToVerse";
 import VerseList from "@/components/bible/VerseList";
-import {
-  getChapterPeek,
-  type ChapterPeek,
-} from "@/lib/actions/bible/chapter-peek";
+import { type ChapterPeek } from "@/lib/actions/bible/chapter-peek";
 import {
   chapterUnit,
   getBook,
@@ -20,17 +18,17 @@ import {
   previousChapter,
 } from "@/lib/bible/bible-books";
 import { setCurrentBibleLocation } from "@/lib/bible/current-location-store";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 
 export type ChapterData = {
   verses: ChapterPeek["verses"];
   secondaryVerses: ChapterPeek["secondaryVerses"];
+};
+
+type Displayed = {
+  bookId: number;
+  chapter: number;
+  data: ChapterData;
 };
 
 /**
@@ -39,12 +37,15 @@ export type ChapterData = {
  * 첫 진입(직접 URL 접속, 공유 링크, 새로고침)은 page.tsx(서버 컴포넌트)가 미리
  * 가져온 데이터를 initialData로 그대로 받아서 쓴다. 그 이후 스와이프/하단바
  * 버튼/피커로 장을 옮길 때는:
- *   1. 내부 state(bookId/chapter 등)만 바꾸고
- *   2. getChapterPeek(로컬 파일 기반, 서버 페이지 렌더링을 거치지 않는 순수 데이터
- *      조회)로 본문만 클라이언트에서 새로 받아오고
+ *   1. 새 장 데이터를 먼저 다 받아온 뒤(캐시에 있으면 사실상 즉시)
+ *   2. bookId/chapter/본문(title에 쓰이는 값 포함)을 한 번에(원자적으로) 갱신하고
  *   3. window.history.pushState로 주소창만 조용히 맞춘다.
  * router.push를 전혀 쓰지 않기 때문에, Next.js가 그 장의 페이지를 서버에서
  * 다시 렌더링하는 과정 자체가 생략된다.
+ *
+ * bookId/chapter와 본문을 하나의 상태(Displayed)로 묶어서 항상 함께만 바뀌도록
+ * 했다 - 제목(bookId/chapter에서 즉시 계산됨)과 본문이 따로 갱신되면서 어긋나
+ * 보이는 문제를 막기 위함이다.
  *
  * 하이라이트/단어메모/구절메모/설교아이콘/읽음체크는 VerseList·BibleTopBar가
  * 이미 bookId/chapter prop 변화에 반응해서 알아서 다시 가져오므로 이 컴포넌트가
@@ -73,11 +74,14 @@ export default function BibleChapterShell({
   scrollSpeed?: number;
   initialData: ChapterData;
 }) {
-  const [bookId, setBookId] = useState(initialBookId);
-  const [chapter, setChapter] = useState(initialChapter);
+  const [displayed, setDisplayed] = useState<Displayed>({
+    bookId: initialBookId,
+    chapter: initialChapter,
+    data: initialData,
+  });
   const [targetVerse, setTargetVerse] = useState<number | null>(initialVerse);
-  const [data, setData] = useState<ChapterData>(initialData);
-  const loadedKeyRef = useRef(`${initialBookId}-${initialChapter}`);
+
+  const { bookId, chapter, data } = displayed;
 
   const book = getBook(bookId);
   const unit = chapterUnit(bookId);
@@ -95,12 +99,33 @@ export default function BibleChapterShell({
     [translation, secondary],
   );
 
-  // 실제로 장을 옮기는 함수. 서버 이동(router.push) 없이 내부 상태만 바꾸고
-  // 주소창은 history.pushState로만 맞춘다.
+  // 실제로 장을 옮기는 함수. 새 장의 본문을 먼저 다 받아온 뒤에야 화면(제목+본문)을
+  // 한 번에 바꾼다 - 캐시에 있으면(항상 ±3까지 미리 데워두므로 대부분 그렇다)
+  // 사실상 즉시 끝난다. 서버 이동(router.push)은 전혀 쓰지 않고 주소창은
+  // history.pushState로만 맞춘다.
   const navigateTo = useCallback(
-    (destBookId: number, destChapter: number, verse?: number) => {
-      setBookId(destBookId);
-      setChapter(destChapter);
+    async (destBookId: number, destChapter: number, verse?: number) => {
+      const cached = getCachedChapterPeekSync(
+        destBookId,
+        destChapter,
+        translation,
+        secondary,
+      );
+      const peek =
+        cached ??
+        (await getCachedChapterPeek(
+          destBookId,
+          destChapter,
+          translation,
+          secondary,
+        ));
+      if (!peek) return;
+
+      setDisplayed({
+        bookId: destBookId,
+        chapter: destChapter,
+        data: { verses: peek.verses, secondaryVerses: peek.secondaryVerses },
+      });
       setTargetVerse(verse ?? null);
       window.history.pushState(
         null,
@@ -108,67 +133,53 @@ export default function BibleChapterShell({
         buildHref(destBookId, destChapter, verse),
       );
     },
-    [buildHref],
+    [translation, secondary, buildHref],
   );
 
   // 장이 바뀌면 스크롤 위치를 화면이 그려지기 전에 미리 맨 위로 되돌린다. 예전엔
   // 페이지 전체가 새로 로드돼서 스크롤이 항상 0으로 시작했지만, 지금은 DOM이 유지된
-  // 채 내용만 바뀌는 구조라 이전 장의 스크롤 위치가 그대로 남아있는다 - 그래서 새
-  // 장의 엉뚱한 부분이 한 프레임 보였다가 위로 튀는 게 깜빡임의 진짜 원인이었다.
+  // 채 내용만 바뀌는 구조라 이전 장의 스크롤 위치가 그대로 남아있는다.
   // (targetVerse가 있으면 ScrollToVerse가 뒤이어 그 절로 부드럽게 스크롤한다.)
   useLayoutEffect(() => {
     const container = document.getElementById("bible-scroll-container");
     if (container) container.scrollTop = 0;
   }, [bookId, chapter]);
 
-  // bookId/chapter가 바뀌면(내부 이동) 새 장 데이터를 클라이언트에서 직접 받아온다.
-  // 최초 렌더링(initialData와 동일한 장)에서는 서버가 이미 준 데이터를 그대로 쓰고
-  // 다시 요청하지 않는다.
-  useEffect(() => {
-    const key = `${bookId}-${chapter}`;
-    if (key === loadedKeyRef.current) return;
-    let cancelled = false;
-
-    // 스와이프 미리보기 캐시에 이미 있으면(대부분 그렇다 - 항상 ±3까지 미리 데워둠)
-    // 네트워크 호출 없이 즉시 반영된다. 캐시 적중(동기)과 서버 조회(비동기) 두 경로를
-    // 하나의 Promise 체인으로 합쳐서, setData 호출은 항상 .then() 콜백 안에서만
-    // 일어나게 한다 - effect 몸체에서 곧바로 setState를 부르면 안 된다는 규칙 때문.
-    const cached = getCachedChapterPeekSync(
-      bookId,
-      chapter,
-      translation,
-      secondary,
-    );
-    const peekPromise = cached
-      ? Promise.resolve(cached)
-      : getChapterPeek(bookId, chapter, translation, secondary);
-
-    peekPromise.then((peek) => {
-      if (cancelled || !peek) return;
-      setData({ verses: peek.verses, secondaryVerses: peek.secondaryVerses });
-      loadedKeyRef.current = key;
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bookId, chapter, translation, secondary]);
-
   // 브라우저 뒤로가기/앞으로가기 대응 - history.pushState로 직접 바꾼 주소창은
   // Next.js 라우터가 모르는 상태이므로, popstate를 직접 듣고 내부 상태를 맞춘다.
+  // 이것도 navigateTo와 동일하게, 데이터를 먼저 받아온 뒤 한 번에 반영한다.
   useEffect(() => {
     function onPopState() {
       const match = window.location.pathname.match(/^\/bible\/(\d+)\/(\d+)/);
       if (!match) return;
+      const destBookId = Number(match[1]);
+      const destChapter = Number(match[2]);
       const params = new URLSearchParams(window.location.search);
-      setBookId(Number(match[1]));
-      setChapter(Number(match[2]));
       const verseParam = params.get("verse");
-      setTargetVerse(verseParam ? Number(verseParam) : null);
+
+      const cached = getCachedChapterPeekSync(
+        destBookId,
+        destChapter,
+        translation,
+        secondary,
+      );
+      const peekPromise = cached
+        ? Promise.resolve(cached)
+        : getCachedChapterPeek(destBookId, destChapter, translation, secondary);
+
+      peekPromise.then((peek) => {
+        if (!peek) return;
+        setDisplayed({
+          bookId: destBookId,
+          chapter: destChapter,
+          data: { verses: peek.verses, secondaryVerses: peek.secondaryVerses },
+        });
+        setTargetVerse(verseParam ? Number(verseParam) : null);
+      });
     }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [translation, secondary]);
 
   // 하단바(BottomNav)는 이 셸 바깥(루트 레이아웃)에 있어서 usePathname()만으로는
   // 지금 이 셸이 클라이언트에서 어느 장으로 옮겨갔는지 알 수 없다. 그래서 장이 바뀔

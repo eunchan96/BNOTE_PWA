@@ -11,6 +11,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 // 브라우저 메모리에 계속 남는 캐시 - BibleSwipePager가 마운트/언마운트를 반복해도
 // (장을 넘길 때마다 새 인스턴스가 뜬다) 한 번 가져온 장은 다시 안 가져온다.
 const peekCache = new Map<string, ChapterPeek | null>();
+// 같은 장을 동시에 여러 곳(스와이프 미리 데우기, 피커로 직접 이동 등)에서 요청할 때
+// 중복으로 서버에 요청하지 않도록, 진행 중인 요청을 여기 저장해두고 재사용한다.
+const pending = new Map<string, Promise<ChapterPeek | null>>();
 
 export function peekCacheKey(
   bookId: number,
@@ -29,9 +32,19 @@ export async function getCachedChapterPeek(
 ): Promise<ChapterPeek | null> {
   const key = peekCacheKey(bookId, chapter, translation, secondary);
   if (peekCache.has(key)) return peekCache.get(key)!;
-  const peek = await getChapterPeek(bookId, chapter, translation, secondary);
-  peekCache.set(key, peek);
-  return peek;
+
+  const inFlight = pending.get(key);
+  if (inFlight) return inFlight;
+
+  const promise = getChapterPeek(bookId, chapter, translation, secondary).then(
+    (peek) => {
+      peekCache.set(key, peek);
+      pending.delete(key);
+      return peek;
+    },
+  );
+  pending.set(key, promise);
+  return promise;
 }
 
 /** 이미 캐시에 있으면 즉시(동기) 돌려준다. 없으면 undefined. */
@@ -46,8 +59,7 @@ export function getCachedChapterPeekSync(
 
 /** 전환이 확정된 순간부터 새 화면이 완전히 뜰 때까지 상단바/본문 터치를 잠깐 막는다.
  * 셸이 내부 상태를 다 바꾸면(아래 peek 조회 effect가 새로 실행되는 시점) 자동으로 풀리고,
- * 혹시 못 풀리는 경우를 대비해 최대 1초 후엔 무조건 풀리는 안전장치도 둔다(클라이언트
- * 주도 전환은 서버 왕복이 없어 예전(3초)보다 훨씬 빨리 끝나므로 더 짧게 잡는다). */
+ * 혹시 못 풀리는 경우를 대비해 최대 1초 후엔 무조건 풀리는 안전장치도 둔다. */
 function lockDuringTransition() {
   document.body.classList.add("chapter-transitioning");
   window.setTimeout(() => {
@@ -145,21 +157,6 @@ export default function BibleSwipePager({
     nextPeekRef.current = nextPeek;
   }, [nextPeek]);
 
-  // 장이 바뀌면(내부 이동이든 popstate든) 트랙 위치를 화면이 그려지기 전에 미리
-  // 초기화한다 - useEffect로 하면 브라우저가 이미 한 프레임을 그린 뒤에 실행돼서,
-  // 새 장의 내용이 슬라이드된 위치에 잠깐 보였다가 제자리로 스냅되는 깜빡임이 있었다.
-  // transform을 아예 지우지 않고 translateX(0px)로 유지하는 이유: 값을 완전히
-  // 지우면(빈 문자열) 브라우저가 이 요소의 GPU 합성 레이어를 만들었다 없앴다
-  // 반복하게 되는데, 이 과정에서(특히 삼성 인터넷) 아주 짧게 이전 프레임이 다시
-  // 그려지는 듯한 깜빡임이 관찰됐다. 항상 같은 방식(transform 기반)으로 합성되게
-  // 유지하면 이 레이어 전환 자체가 없어져서 깜빡임이 사라진다.
-  useLayoutEffect(() => {
-    const track = document.getElementById("bible-swipe-track");
-    if (!track) return;
-    track.style.transition = "";
-    track.style.transform = "translateX(0px)";
-  }, [bookId, chapter]);
-
   useEffect(() => {
     // 이 effect가 실행됐다는 건 (bookId/chapter가 바뀌어) 새 화면이 실제로 떴다는
     // 뜻이므로, 전환 중 걸어뒀던 입력 잠금을 여기서 푼다.
@@ -211,6 +208,22 @@ export default function BibleSwipePager({
       }
     }
   }, [bookId, chapter, translation, secondary]);
+
+  useLayoutEffect(() => {
+    const track = document.getElementById("bible-swipe-track");
+    if (!track) return;
+    // 콘텐츠는 이미 새 장으로 바뀌었지만, 여기서 곧바로 transform을 초기화해서
+    // 화면 안으로 들여오면, 브라우저가 "큰 텍스트 영역 다시 그리기"와 "화면에
+    // 드러내기"를 같은 프레임에 처리하면서 아주 짧게 이전 화면이 다시 비치는
+    // 현상이 있었다(모바일 브라우저의 페인트 처리 특성으로 보임). 그래서 한 프레임
+    // 미뤄서, 새 콘텐츠가 아직 화면 밖에 있는(안 보이는) 상태에서 브라우저가 조용히
+    // 다 그리게 한 뒤에야 transform을 원위치시켜 드러낸다.
+    const raf = requestAnimationFrame(() => {
+      track.style.transition = "";
+      track.style.transform = "translateX(0px)";
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [bookId, chapter]);
 
   useEffect(() => {
     const track = document.getElementById("bible-swipe-track");
