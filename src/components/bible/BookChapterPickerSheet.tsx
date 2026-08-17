@@ -77,10 +77,14 @@ export default function BookChapterPickerSheet({
   }
 
   function pickVerse(verse: number) {
-    const suffix = secondary ? `&secondary=${secondary}` : "";
-    router.push(
-      `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}${suffix}`,
-    );
+    if (window.__bnoteBibleShellGoTo) {
+      window.__bnoteBibleShellGoTo(selectedBookId, selectedChapter, verse);
+    } else {
+      const suffix = secondary ? `&secondary=${secondary}` : "";
+      router.push(
+        `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}${suffix}`,
+      );
+    }
     onClose();
   }
 

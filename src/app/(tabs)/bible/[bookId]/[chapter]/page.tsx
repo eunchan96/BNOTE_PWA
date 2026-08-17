@@ -1,22 +1,22 @@
-import BibleSwipePager from "@/components/bible/BibleSwipePager";
-import BibleTopBar from "@/components/bible/BibleTopBar";
-import CustomScrollbar from "@/components/bible/CustomScrollbar";
-import SaveLastReadLocation from "@/components/bible/SaveLastReadLocation";
-import ScrollToVerse from "@/components/bible/ScrollToVerse";
-import VerseList from "@/components/bible/VerseList";
+import BibleChapterShell from "@/components/bible/BibleChapterShell";
 import {
   getAutoScrollEnabled,
   getReadingPlanEnabled,
   getScrollSpeed,
 } from "@/lib/actions/bible/preferences";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible/bible";
-import { chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 const DEFAULT_TRANSLATION = "NKRV";
 
+/**
+ * 이 서버 컴포넌트는 "첫 진입"(직접 URL 접속, 공유 링크, 새로고침)에서만 실행된다.
+ * 그 이후 스와이프/버튼/피커로 장을 옮기는 건 BibleChapterShell(클라이언트 컴포넌트)이
+ * 서버 라우팅 없이 직접 처리하므로, 이 컴포넌트가 다시 실행되지 않는다.
+ */
 export default async function BibleChapterPage({
   params,
   searchParams,
@@ -53,9 +53,6 @@ export default async function BibleChapterPage({
 
   const supabase = await createClient();
 
-  // 본문(로컬 파일 캐시라 이미 빠름)과 로그인 여부만 기다린다. 하이라이트·메모·설교여부는
-  // 사용자별 Supabase 조회라 시간이 걸리므로, 화면을 막지 않고 VerseList가 마운트된 뒤
-  // 클라이언트에서 따로 채워 넣는다(getVerseInteractionState).
   const [
     verses,
     secondaryVerses,
@@ -80,57 +77,18 @@ export default async function BibleChapterPage({
     notFound();
   }
 
-  const unit = chapterUnit(bookId);
-
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[52px] flex flex-col overflow-hidden">
-      <BibleTopBar
-        bookId={bookId}
-        chapter={chapter}
-        title={`${book.name} ${chapter}${unit}`}
-        translation={translation}
-        secondary={secondary}
-        isLoggedIn={Boolean(user)}
-        readingPlanEnabled={readingPlanEnabled}
-        autoScrollEnabled={autoScrollEnabled}
-        scrollSpeed={scrollSpeed}
-      />
-
-      <BibleSwipePager
-        bookId={bookId}
-        chapter={chapter}
-        translation={translation}
-        secondary={secondary}
-        currentTitle={`${book.name} ${chapter}${unit}`}
-      >
-        <div className="relative h-full min-h-0 flex-1">
-          <div
-            id="bible-scroll-container"
-            className="scrollbar-hide h-full overflow-y-auto overscroll-contain"
-          >
-            <div
-              id="bible-scroll-content"
-              className="mx-auto flex w-full max-w-2xl flex-col pb-2"
-            >
-              <SaveLastReadLocation
-                bookId={bookId}
-                chapter={chapter}
-                verse={targetVerse}
-              />
-              <ScrollToVerse verse={targetVerse} />
-              <VerseList
-                bookId={bookId}
-                chapter={chapter}
-                translation={translation}
-                verses={verses}
-                secondaryVerses={secondaryVerses}
-                isLoggedIn={Boolean(user)}
-              />
-            </div>
-          </div>
-          <CustomScrollbar />
-        </div>
-      </BibleSwipePager>
-    </div>
+    <BibleChapterShell
+      initialBookId={bookId}
+      initialChapter={chapter}
+      initialVerse={targetVerse}
+      translation={translation}
+      secondary={secondary}
+      isLoggedIn={Boolean(user)}
+      readingPlanEnabled={readingPlanEnabled}
+      autoScrollEnabled={autoScrollEnabled}
+      scrollSpeed={scrollSpeed}
+      initialData={{ verses, secondaryVerses }}
+    />
   );
 }
