@@ -23,7 +23,7 @@ export default function ScrollToVerse({
     // 나타날 때까지 몇 프레임 정도 재시도한다.
     function tryScroll() {
       if (cancelled) return;
-      const el = document.getElementById(`verse-${verse}`);
+      const el = document.getElementById(`verse-${bookId}-${chapter}-${verse}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
         return;

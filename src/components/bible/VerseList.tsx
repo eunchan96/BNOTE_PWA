@@ -643,7 +643,10 @@ export default function VerseList({
             isFirstVerse && !verse.title && !bookPartLabel;
 
           return (
-            <li key={verse.verse} id={`verse-${verse.verse}`}>
+            <li
+              key={verse.verse}
+              id={`verse-${bookId}-${chapter}-${verse.verse}`}
+            >
               <div
                 role="button"
                 tabIndex={0}
