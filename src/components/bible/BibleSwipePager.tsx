@@ -6,7 +6,7 @@ import {
   type ChapterPeek,
 } from "@/lib/actions/bible/chapter-peek";
 import { nextChapter, previousChapter } from "@/lib/bible/bible-books";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // 브라우저 메모리에 계속 남는 캐시 - BibleSwipePager가 마운트/언마운트를 반복해도
 // (장을 넘길 때마다 새 인스턴스가 뜬다) 한 번 가져온 장은 다시 안 가져온다.
@@ -144,6 +144,16 @@ export default function BibleSwipePager({
   useEffect(() => {
     nextPeekRef.current = nextPeek;
   }, [nextPeek]);
+
+  // 장이 바뀌면(내부 이동이든 popstate든) 트랙 위치를 화면이 그려지기 전에 미리
+  // 초기화한다 - useEffect로 하면 브라우저가 이미 한 프레임을 그린 뒤에 실행돼서,
+  // 새 장의 내용이 슬라이드된 위치에 잠깐 보였다가 제자리로 스냅되는 깜빡임이 있었다.
+  useLayoutEffect(() => {
+    const track = document.getElementById("bible-swipe-track");
+    if (!track) return;
+    track.style.transition = "";
+    track.style.transform = "";
+  }, [bookId, chapter]);
 
   useEffect(() => {
     // 이 effect가 실행됐다는 건 (bookId/chapter가 바뀌어) 새 화면이 실제로 떴다는

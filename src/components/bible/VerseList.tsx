@@ -188,6 +188,21 @@ export default function VerseList({
     const hlKey = `${translation}-${bookId}-${chapter}`;
     const mvKey = `${bookId}-${chapter}`;
 
+    // 장이 바뀌면 이전 장의 하이라이트/메모/선택 상태를 먼저 비운다 - VerseList는
+    // 이제 장이 바뀌어도 재마운트되지 않는 구조라서, 안 비우면 새 장의 본문 위에
+    // 이전 장의 하이라이트 위치 정보나 선택 상태가 잠깐 그대로 남아 잘못된 위치에
+    // 겹쳐 보인다(글자 수가 다르면 위치가 안 맞아 더 눈에 띔). .then()으로 감싸서
+    // effect 몸체에서 곧바로 setState를 부르지 않도록 한다.
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setHighlightRanges({});
+      setWordMemos([]);
+      setMemoVerses(new Set());
+      setSelectedVerses(new Set());
+      setPendingSelection(null);
+      setMode("none");
+    });
+
     (async () => {
       const [cachedHighlights, cachedWordMemos, cachedMemoVerses] =
         await Promise.all([

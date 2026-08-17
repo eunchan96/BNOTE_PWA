@@ -20,7 +20,13 @@ import {
   previousChapter,
 } from "@/lib/bible/bible-books";
 import { setCurrentBibleLocation } from "@/lib/bible/current-location-store";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export type ChapterData = {
   verses: ChapterPeek["verses"];
@@ -104,6 +110,16 @@ export default function BibleChapterShell({
     },
     [buildHref],
   );
+
+  // 장이 바뀌면 스크롤 위치를 화면이 그려지기 전에 미리 맨 위로 되돌린다. 예전엔
+  // 페이지 전체가 새로 로드돼서 스크롤이 항상 0으로 시작했지만, 지금은 DOM이 유지된
+  // 채 내용만 바뀌는 구조라 이전 장의 스크롤 위치가 그대로 남아있는다 - 그래서 새
+  // 장의 엉뚱한 부분이 한 프레임 보였다가 위로 튀는 게 깜빡임의 진짜 원인이었다.
+  // (targetVerse가 있으면 ScrollToVerse가 뒤이어 그 절로 부드럽게 스크롤한다.)
+  useLayoutEffect(() => {
+    const container = document.getElementById("bible-scroll-container");
+    if (container) container.scrollTop = 0;
+  }, [bookId, chapter]);
 
   // bookId/chapter가 바뀌면(내부 이동) 새 장 데이터를 클라이언트에서 직접 받아온다.
   // 최초 렌더링(initialData와 동일한 장)에서는 서버가 이미 준 데이터를 그대로 쓰고
@@ -231,7 +247,11 @@ export default function BibleChapterShell({
                 chapter={chapter}
                 verse={targetVerse}
               />
-              <ScrollToVerse verse={targetVerse} />
+              <ScrollToVerse
+                verse={targetVerse}
+                bookId={bookId}
+                chapter={chapter}
+              />
               <VerseList
                 bookId={bookId}
                 chapter={chapter}
