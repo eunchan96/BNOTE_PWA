@@ -148,11 +148,16 @@ export default function BibleSwipePager({
   // 장이 바뀌면(내부 이동이든 popstate든) 트랙 위치를 화면이 그려지기 전에 미리
   // 초기화한다 - useEffect로 하면 브라우저가 이미 한 프레임을 그린 뒤에 실행돼서,
   // 새 장의 내용이 슬라이드된 위치에 잠깐 보였다가 제자리로 스냅되는 깜빡임이 있었다.
+  // transform을 아예 지우지 않고 translateX(0px)로 유지하는 이유: 값을 완전히
+  // 지우면(빈 문자열) 브라우저가 이 요소의 GPU 합성 레이어를 만들었다 없앴다
+  // 반복하게 되는데, 이 과정에서(특히 삼성 인터넷) 아주 짧게 이전 프레임이 다시
+  // 그려지는 듯한 깜빡임이 관찰됐다. 항상 같은 방식(transform 기반)으로 합성되게
+  // 유지하면 이 레이어 전환 자체가 없어져서 깜빡임이 사라진다.
   useLayoutEffect(() => {
     const track = document.getElementById("bible-swipe-track");
     if (!track) return;
     track.style.transition = "";
-    track.style.transform = "";
+    track.style.transform = "translateX(0px)";
   }, [bookId, chapter]);
 
   useEffect(() => {
