@@ -17,7 +17,7 @@ export default async function ResponsiveReadingListPage() {
           <li key={r.number}>
             <Link
               href={`/bible/appendix/responsive-reading/${r.number}`}
-              className="block cursor-pointer px-4 py-3 text-[15px] text-text-primary"
+              className="block cursor-pointer px-4 py-3.5 text-base text-text-primary"
             >
               {r.number}. {r.title}
             </Link>

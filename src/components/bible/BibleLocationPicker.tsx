@@ -19,9 +19,10 @@ export default function BibleLocationPicker({
   return (
     <>
       <button
+        id="bible-location-title"
         type="button"
         onClick={() => setIsOpen(true)}
-        className="shrink-0 text-base font-bold text-white cursor-pointer"
+        className="shrink-0 whitespace-nowrap text-base font-bold text-white cursor-pointer"
       >
         {title}
       </button>

@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -17,10 +17,26 @@ async function requireUser() {
   return { supabase, user };
 }
 
+/** getScrapGroups()/getScrapsForGroup()처럼 페이지 최초 로딩 경로에서만 쓰는 가벼운 버전.
+ * /bible/scraps는 이미 미들웨어가 같은 요청 안에서 getUser()(네트워크 검증)를
+ * 한 번 거쳤으므로, 여기서는 쿠키에서 바로 읽는 getSession()으로 그 결과를 재사용한다. */
+async function requireSessionUser() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/login?next=/bible/scraps");
+  }
+
+  return { supabase, user: session.user };
+}
+
 export type ScrapGroupRow = { id: number; name: string; count: number };
 
 export async function getScrapGroups(): Promise<ScrapGroupRow[]> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireSessionUser();
 
   const { data: groups, error } = await supabase
     .from("scrap_group")
@@ -42,7 +58,7 @@ export async function getScrapGroups(): Promise<ScrapGroupRow[]> {
 }
 
 export async function getScrapGroupName(groupId: number): Promise<string | null> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireSessionUser();
   const { data } = await supabase
     .from("scrap_group")
     .select("name")
@@ -110,7 +126,7 @@ export type ScrapRow = {
 };
 
 export async function getScrapsForGroup(groupId: number): Promise<ScrapRow[]> {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireSessionUser();
 
   const { data, error } = await supabase
     .from("scrap")

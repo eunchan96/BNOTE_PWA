@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* 글자 크기 전용 배율. 나중에 마이페이지 "글자 크기" 설정이 생기면
+     <html>이나 <body>에 style="--font-scale: 1.15" 식으로 이 값만 덮어쓰면
+     아래 --text-* 토큰을 쓰는 텍스트가 전부 같이 커진다.
+     여백(padding/gap 등)은 이 변수와 무관하므로 레이아웃은 그대로 유지된다. */
+  --font-scale: 1;
 }
 
 @theme inline {
@@ -17,9 +23,24 @@
   --color-highlight: #fff9c4;
   --color-text-primary: #212121;
   --color-text-secondary: #757575;
+  --color-text-hint: #9e9e9e;
   --color-surface-background: #ffffff;
   --color-input-background: #f5f5f5;
   --font-sans: var(--font-roboto);
+
+  /* Tailwind 기본 폰트 크기 스케일을 --font-scale에 연동 (text-xs/sm/base/lg/xl 그대로 사용 가능) */
+  --text-xs: calc(0.75rem * var(--font-scale));
+  --text-sm: calc(0.875rem * var(--font-scale));
+  --text-base: calc(1rem * var(--font-scale));
+  --text-lg: calc(1.125rem * var(--font-scale));
+  --text-xl: calc(1.25rem * var(--font-scale));
+
+  /* 기본 스케일에 없던 중간 크기들(안드로이드 11/13/15/17/22sp에 대응) */
+  --text-11: calc(0.6875rem * var(--font-scale));
+  --text-13: calc(0.8125rem * var(--font-scale));
+  --text-15: calc(0.9375rem * var(--font-scale));
+  --text-17: calc(1.0625rem * var(--font-scale));
+  --text-22: calc(1.375rem * var(--font-scale));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,4 +54,41 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* 안드로이드 상단바(HorizontalScrollView, scrollbars="none")와 동일하게
+   가로 스크롤은 되지만 스크롤바는 안 보이게 한다. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 세로 스크롤바는 안드로이드 네이티브 스크롤바처럼 얇고 트랙 없이.
+    일부 모바일 브라우저(삼성 인터넷 등)의 기본 스크롤바는 두꺼운 트랙 박스가
+    화면 끝에서 살짝 떨어져 보이는데, 이를 대체한다. */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+}
+html {
+  scrollbar-width: thin;
+}
+
+/* 장 전환이 확정된 순간부터 새 화면이 완전히 뜰 때까지, 그 짧은 사이 구간 동안
+   상단바/성경 본문 영역의 터치·클릭을 잠깐 막는다. 이 구간에 또 스와이프하거나
+   피커를 여는 등 다른 동작을 하면 예전 화면과 새 화면이 서로 꼬여서 부자연스러워
+   보이던 문제를 막기 위함. */
+body.chapter-transitioning #bible-swipe-viewport,
+body.chapter-transitioning header {
+  pointer-events: none;
 }

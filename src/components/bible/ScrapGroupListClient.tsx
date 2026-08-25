@@ -75,8 +75,8 @@ export default function ScrapGroupListClient({
         {groups.map((group) => (
           <li key={group.id} className="border-b border-divider">
             {isManageMode ? (
-              <div className="flex items-center gap-1 px-4 py-2">
-                <span className="flex-1 text-[15px] text-text-primary">
+              <div className="flex items-center gap-1 px-4 py-3.5">
+                <span className="flex-1 text-base text-text-primary">
                   {group.name}
                 </span>
                 <EditIconButton onClick={() => setRenaming(group)} />
@@ -87,10 +87,10 @@ export default function ScrapGroupListClient({
                 href={`/bible/scraps/${group.id}`}
                 className="flex cursor-pointer items-center justify-between px-4 py-3.5"
               >
-                <span className="text-[15px] text-text-primary">
+                <span className="text-base text-text-primary">
                   {group.name}
                 </span>
-                <span className="text-sm text-zinc-400">{group.count}개</span>
+                <span className="text-13 text-text-hint">{group.count}개</span>
               </Link>
             )}
           </li>

@@ -2,6 +2,7 @@
 
 import { saveTranslationPreference } from "@/lib/actions/bible/preferences";
 import { TRANSLATIONS } from "@/lib/bible/translations";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -49,6 +50,8 @@ export default function TranslationPickerSheet({
   const secondaryOptions = TRANSLATIONS.filter(
     (t) => t.code !== selectedPrimary,
   );
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">
@@ -155,7 +158,7 @@ function ListRow({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full px-4 py-3 text-left text-[15px] ${
+      className={`w-full px-4 py-3.5 text-left text-base ${
         selected ? "font-bold text-brown-primary" : "text-text-primary"
       } cursor-pointer`}
     >

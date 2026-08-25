@@ -1,8 +1,14 @@
 "use client";
 
 import { getBook, nextChapter, previousChapter } from "@/lib/bible/bible-books";
+import {
+  getCurrentBibleLocation,
+  subscribeCurrentBibleLocation,
+  type BibleLocation,
+} from "@/lib/bible/current-location-store";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 const NAV_ITEMS = [
   { href: "/bible", key: "bible" as const },
@@ -14,7 +20,15 @@ const CHAPTER_PATH = /^\/bible\/(\d+)\/(\d+)/;
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+
+  // 성경 읽기 셸(BibleChapterShell)이 클라이언트에서 장을 옮기면 주소창은
+  // history.pushState로만 바뀌어서 usePathname()이 못 따라간다. 그래서 셸이
+  // 직접 알려주는 저장소를 구독해서, 있으면 그 값을 최우선으로 쓴다.
+  const shellLocation = useSyncExternalStore(
+    subscribeCurrentBibleLocation,
+    getCurrentBibleLocation,
+    () => null,
+  );
 
   if (
     pathname === "/login" ||
@@ -22,41 +36,52 @@ export default function BottomNav() {
     pathname === "/bible/bookmarks" ||
     pathname.startsWith("/bible/highlights") ||
     pathname.startsWith("/bible/scraps") ||
-    pathname === "/bible/memos"
+    pathname === "/bible/memos" ||
+    /^\/bible\/\d+\/\d+\/sermons$/.test(pathname)
   ) {
     return null;
   }
 
-  const chapterMatch = pathname.match(CHAPTER_PATH);
-  const translationParam = searchParams.get("translation");
-  const secondaryParam = searchParams.get("secondary");
-
-  let prevHref: string | null = null;
-  let nextHref: string | null = null;
-  if (chapterMatch) {
-    const bookId = Number(chapterMatch[1]);
-    const chapter = Number(chapterMatch[2]);
-    if (getBook(bookId)) {
-      const prev = previousChapter(bookId, chapter);
-      const next = nextChapter(bookId, chapter);
-
-      const params = new URLSearchParams();
-      if (translationParam) params.set("translation", translationParam);
-      if (secondaryParam) params.set("secondary", secondaryParam);
-      const suffix = params.toString() ? `?${params.toString()}` : "";
-
-      prevHref = prev ? `/bible/${prev.bookId}/${prev.chapter}${suffix}` : null;
-      nextHref = next ? `/bible/${next.bookId}/${next.chapter}${suffix}` : null;
+  // 셸이 떠 있으면(성경 읽기 화면) 그 값을 쓰고, 없으면(아직 마운트 전 등)
+  // 주소창에서 직접 읽는다.
+  let location: BibleLocation = shellLocation;
+  if (!location) {
+    const chapterMatch = pathname.match(CHAPTER_PATH);
+    if (chapterMatch) {
+      location = {
+        bookId: Number(chapterMatch[1]),
+        chapter: Number(chapterMatch[2]),
+        translation: "NKRV",
+      };
     }
+  }
+
+  let prevDest: { bookId: number; chapter: number } | null = null;
+  let nextDest: { bookId: number; chapter: number } | null = null;
+  if (location && getBook(location.bookId)) {
+    prevDest = previousChapter(location.bookId, location.chapter);
+    nextDest = nextChapter(location.bookId, location.chapter);
+  }
+
+  function goToChapter(direction: "prev" | "next") {
+    window.__bnoteBibleShellNavigate?.(direction);
   }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 h-[52px] border-t border-divider bg-white">
-      <div className="mx-auto flex h-full max-w-2xl items-center px-1">
-        <IconButton href={prevHref} label="이전 장">
+      <div className="mx-auto flex h-full max-w-2xl items-center pl-1 pr-4">
+        <IconButton
+          onClick={() => goToChapter("prev")}
+          disabled={!prevDest}
+          label="이전 장"
+        >
           <ChevronLeftIcon />
         </IconButton>
-        <IconButton href={nextHref} label="다음 장">
+        <IconButton
+          onClick={() => goToChapter("next")}
+          disabled={!nextDest}
+          label="다음 장"
+        >
           <ChevronRightIcon />
         </IconButton>
 
@@ -81,25 +106,28 @@ export default function BottomNav() {
 }
 
 function IconButton({
-  href,
+  onClick,
+  disabled,
   label,
   children,
 }: {
-  href: string | null;
+  onClick: () => void;
+  disabled?: boolean;
   label: string;
   children: React.ReactNode;
 }) {
-  if (!href) {
+  if (disabled) {
     return <span className="h-10 w-10" />;
   }
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
+      onClick={onClick}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-full"
+      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full"
     >
       {children}
-    </Link>
+    </button>
   );
 }
 

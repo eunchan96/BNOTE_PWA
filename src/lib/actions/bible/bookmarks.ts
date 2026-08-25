@@ -25,8 +25,24 @@ async function requireUser() {
   return { supabase, user };
 }
 
+/** getBookmarkedVerses()처럼 페이지 최초 로딩 경로에서만 쓰는 가벼운 버전.
+ * /bible/bookmarks는 이미 미들웨어가 같은 요청 안에서 getUser()(네트워크 검증)를
+ * 한 번 거쳤으므로, 여기서는 쿠키에서 바로 읽는 getSession()으로 그 결과를 재사용한다. */
+async function requireSessionUser() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/login?next=/bible/bookmarks");
+  }
+
+  return { supabase, user: session.user };
+}
+
 export async function getBookmarkedVerses(): Promise<BookmarkedVerseRow[]> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireSessionUser();
 
   const { data, error } = await supabase
     .from("bible_bookmark")

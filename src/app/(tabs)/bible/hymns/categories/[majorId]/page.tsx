@@ -34,19 +34,22 @@ export default async function HymnMinorCategoryPage({
         </h1>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 p-3">
+      <div className="grid grid-cols-3 gap-3 p-1.5">
         {cells.map(({ minor, rangeLabel }) => (
           <Link
             key={minor.id}
             href={`/bible/hymns?categoryId=${minor.id}&categoryName=${encodeURIComponent(minor.name)}`}
-            className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg bg-zinc-100 p-2 text-center"
+            className="flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-lg bg-input-background p-3 text-center"
           >
-            <span className="text-sm text-text-primary">{minor.name}</span>
-            {rangeLabel && (
-              <span className="mt-1 text-xs text-text-secondary">
-                {rangeLabel}
-              </span>
-            )}
+            <span className="text-sm text-text-primary">
+              {minor.name}
+              {rangeLabel && (
+                <>
+                  <br />
+                  {rangeLabel}
+                </>
+              )}
+            </span>
           </Link>
         ))}
       </div>

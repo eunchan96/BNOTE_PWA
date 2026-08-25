@@ -19,7 +19,7 @@ export default async function TopicListPage() {
           <li key={topic.id} className="border-b border-divider">
             <Link
               href={`/bible/knowledge/topics/${topic.id}`}
-              className="block cursor-pointer px-4 py-4 text-[15px] text-text-primary"
+              className="block cursor-pointer px-4 py-4 text-15 text-text-primary"
             >
               {topic.title}
             </Link>

@@ -1,5 +1,7 @@
+import { getLastReadLocation } from "@/lib/actions/bible/preferences";
 import { redirect } from "next/navigation";
 
-export default function BibleIndexPage() {
-  redirect("/bible/1/1");
+export default async function BibleIndexPage() {
+  const { bookId, chapter, verse } = await getLastReadLocation();
+  redirect(`/bible/${bookId}/${chapter}${verse ? `?verse=${verse}` : ""}`);
 }

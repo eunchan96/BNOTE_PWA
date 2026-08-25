@@ -17,6 +17,24 @@ async function requireUser() {
   return { supabase, user };
 }
 
+/** getSermons()처럼 페이지 최초 로딩 경로에서만 쓰는 가벼운 버전.
+ * /sermons, /mypage 등은 이미 미들웨어가 같은 요청 안에서 getUser()(네트워크 검증)를
+ * 한 번 거쳤으므로, 여기서는 쿠키에서 바로 읽는 getSession()으로 그 결과를 재사용한다 -
+ * 탭 전환마다 인증 네트워크 호출이 두 번 일어나던 것을 한 번으로 줄인다.
+ * 쓰기(생성/수정/삭제) 액션은 보안을 위해 여전히 requireUser()(getUser())를 쓴다. */
+async function requireSessionUser() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
+    redirect("/login?next=/sermons");
+  }
+
+  return { supabase, user: session.user };
+}
+
 export type PreacherRow = { id: number; name: string };
 
 export async function getPreachers(): Promise<PreacherRow[]> {
@@ -105,7 +123,7 @@ function toShortLabel(r: {
 }
 
 export async function getSermons(): Promise<SermonListRow[]> {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireSessionUser();
 
   const { data, error } = await supabase
     .from("sermon")
@@ -131,6 +149,60 @@ export async function getSermons(): Promise<SermonListRow[]> {
       colorHex: category?.color_hex ?? null,
       refLabel,
       firstBookId: refs[0]?.start_book_id ?? null,
+      preacherName: preacher?.name ?? null,
+    };
+  });
+}
+
+export async function getSermonsForChapter(
+  bookId: number,
+  chapter: number,
+): Promise<SermonListRow[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // 안드로이드 SermonDao.getByBookChapter와 동일한 조건:
+  // 설교 성경범위의 시작 책이 이 책이고, 시작~끝 장 사이에 이 장이 포함되는 경우.
+  const { data: refs, error: refError } = await supabase
+    .from("sermon_bible_ref")
+    .select("sermon_id, start_chapter, end_chapter, start_book_id")
+    .eq("start_book_id", bookId)
+    .lte("start_chapter", chapter)
+    .gte("end_chapter", chapter);
+  if (refError) throw refError;
+
+  const sermonIds = [...new Set((refs ?? []).map((r) => r.sermon_id))];
+  if (sermonIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("sermon")
+    .select(
+      "id, title, sermon_date, sermon_category(color_hex), preacher(name), sermon_bible_ref(start_book_id, start_chapter, start_verse, end_book_id, end_chapter, end_verse)",
+    )
+    .eq("member_id", user.id)
+    .in("id", sermonIds)
+    .order("sermon_date", { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((s) => {
+    const refsForSermon = s.sermon_bible_ref ?? [];
+    const refLabel = refsForSermon.map(toShortLabel).join(", ");
+
+    const category = Array.isArray(s.sermon_category)
+      ? s.sermon_category[0]
+      : s.sermon_category;
+    const preacher = Array.isArray(s.preacher) ? s.preacher[0] : s.preacher;
+
+    return {
+      id: s.id,
+      title: s.title,
+      sermonDate: s.sermon_date,
+      colorHex: category?.color_hex ?? null,
+      refLabel,
+      firstBookId: refsForSermon[0]?.start_book_id ?? null,
       preacherName: preacher?.name ?? null,
     };
   });

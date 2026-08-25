@@ -1,5 +1,6 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -11,12 +12,22 @@ const APPENDIX_ITEMS = [
   { label: "교독문", slug: "responsive-reading" },
 ];
 
-export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
+export default function BibleMenuDrawer({
+  readingPlanEnabled,
+  autoScrollEnabled,
+  onToggleReadingPlan,
+  onToggleAutoScroll,
+  onClose,
+}: {
+  readingPlanEnabled: boolean;
+  autoScrollEnabled: boolean;
+  onToggleReadingPlan: (value: boolean) => void;
+  onToggleAutoScroll: (value: boolean) => void;
+  onClose: () => void;
+}) {
   const [isAppendixOpen, setIsAppendixOpen] = useState(false);
-  // 성경읽기표/자동스크롤은 아직 실제 기능(백엔드)이 없어서 시각적 스텁입니다.
-  // 해당 도메인 만들 때 실제 상태·서버 액션으로 교체하면 됩니다.
-  const [readingPlanEnabled, setReadingPlanEnabled] = useState(false);
-  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -37,7 +48,7 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => setIsAppendixOpen((v) => !v)}
-            className="flex cursor-pointer items-center justify-between p-4 text-left text-[15px] text-zinc-900"
+            className="flex cursor-pointer items-center justify-between p-4 text-left text-15 text-zinc-900"
           >
             부록
             <span className="text-zinc-400">{isAppendixOpen ? "▴" : "▾"}</span>
@@ -49,7 +60,7 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
                   key={item.slug}
                   href={`/bible/appendix/${item.slug}`}
                   onClick={onClose}
-                  className="cursor-pointer py-3.5 pl-8 pr-4 text-[15px] text-zinc-800"
+                  className="cursor-pointer py-3.5 pl-8 pr-4 text-15 text-zinc-800"
                 >
                   {item.label}
                 </Link>
@@ -57,12 +68,20 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          <MenuLink href="/bible/knowledge" label="성경 배경지식" onClick={onClose} />
+          <MenuLink
+            href="/bible/knowledge"
+            label="성경 배경지식"
+            onClick={onClose}
+          />
 
           <div className="border-t border-divider" />
 
           <MenuLink href="/bible/scraps" label="스크랩" onClick={onClose} />
-          <MenuLink href="/bible/highlights" label="하이라이트" onClick={onClose} />
+          <MenuLink
+            href="/bible/highlights"
+            label="하이라이트"
+            onClick={onClose}
+          />
           <MenuLink href="/bible/memos" label="메모" onClick={onClose} />
 
           <div className="border-t border-divider" />
@@ -70,12 +89,12 @@ export default function BibleMenuDrawer({ onClose }: { onClose: () => void }) {
           <ToggleRow
             label="성경읽기표 활성화"
             checked={readingPlanEnabled}
-            onChange={setReadingPlanEnabled}
+            onChange={onToggleReadingPlan}
           />
           <ToggleRow
             label="자동스크롤 활성화"
             checked={autoScrollEnabled}
-            onChange={setAutoScrollEnabled}
+            onChange={onToggleAutoScroll}
           />
           {/* 방해금지 모드는 안드로이드 기기 전용 기능이라 웹에는 없음 */}
         </div>
@@ -98,7 +117,7 @@ function MenuLink({
     <Link
       href={href}
       onClick={onClick}
-      className="cursor-pointer p-4 text-[15px] text-zinc-900"
+      className="cursor-pointer p-4 text-15 text-zinc-900"
     >
       {label}
     </Link>
@@ -120,7 +139,7 @@ function ToggleRow({
       onClick={() => onChange(!checked)}
       className="flex cursor-pointer items-center justify-between p-4 text-left"
     >
-      <span className="text-[15px] text-zinc-900">{label}</span>
+      <span className="text-15 text-zinc-900">{label}</span>
       <span
         className={`flex h-6 w-11 items-center rounded-full p-0.5 transition-colors ${
           checked ? "bg-brown-primary" : "bg-zinc-300"

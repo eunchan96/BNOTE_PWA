@@ -22,34 +22,32 @@ export default async function GenealogyDetailPage({
       </header>
 
       <div className="flex flex-1 flex-col overflow-y-auto p-5">
-        <p className="mb-4 text-base leading-relaxed text-text-primary">
+        <p className="mb-4 text-sm leading-relaxed text-text-secondary">
           {chart.description}
         </p>
 
         {chart.entries.map((entry, index) => (
           <div key={index}>
-            <div className="rounded-lg bg-zinc-50 p-3.5">
+            <div className="rounded-xl bg-input-background px-[14px] py-3">
               <p className="text-base font-bold text-brown-primary">
                 {entry.name}
               </p>
-              <p className="mt-0.5 text-[13px] text-text-secondary">
+              <p className="mt-0.5 text-13 text-text-secondary">
                 {entry.relation}
               </p>
               {entry.note && (
-                <p className="mt-1.5 text-[13px] text-text-primary">
-                  {entry.note}
-                </p>
+                <p className="mt-1.5 text-13 text-text-primary">{entry.note}</p>
               )}
             </div>
             {index !== chart.entries.length - 1 && (
-              <p className="py-1 text-center text-lg text-zinc-300">↓</p>
+              <p className="py-1 text-center text-lg text-text-hint">↓</p>
             )}
           </div>
         ))}
 
         <Link
           href={`/bible/${chart.keyBookId}/${chart.keyChapter}`}
-          className="mt-6 cursor-pointer rounded-lg bg-brown-primary px-4 py-3 text-center font-medium text-white"
+          className="mt-6 cursor-pointer rounded-lg bg-input-background p-[14px] text-center text-15 font-bold text-brown-primary"
         >
           {chart.keyVerseLabel} 보러 가기
         </Link>

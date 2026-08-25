@@ -21,7 +21,7 @@ export default async function TimelinePage() {
         {eventsWithEraFlag.map(({ event, showEraHeader }) => (
           <div key={event.id}>
             {showEraHeader && (
-              <p className="px-4 pb-1.5 pt-4 text-[13px] font-bold text-brown-primary">
+              <p className="px-4 pb-1.5 pt-4 text-13 font-bold text-brown-primary">
                 {event.era}
               </p>
             )}
@@ -30,12 +30,12 @@ export default async function TimelinePage() {
               className="block cursor-pointer px-4 py-2.5"
             >
               <div className="flex items-baseline gap-2">
-                <p className="flex-1 text-[15px] font-bold text-text-primary">
+                <p className="flex-1 text-15 font-bold text-text-primary">
                   {event.title}
                 </p>
-                <p className="text-[11px] text-zinc-400">{event.period}</p>
+                <p className="text-11 text-text-hint">{event.period}</p>
               </div>
-              <p className="mt-1 text-[13px] text-text-secondary">
+              <p className="mt-1 text-13 text-text-secondary">
                 {event.description}
               </p>
             </Link>

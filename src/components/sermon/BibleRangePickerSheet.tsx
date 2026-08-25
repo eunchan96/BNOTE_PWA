@@ -2,6 +2,7 @@
 
 import type { BibleRefInput } from "@/lib/actions/sermon/sermons";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -115,6 +116,8 @@ export default function BibleRangePickerSheet({
       startChapter !== -1 ? `${startChapter}${unit}` : `_${unit}`;
     return `${book?.name} ${chapterLabel} _절`;
   })();
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">

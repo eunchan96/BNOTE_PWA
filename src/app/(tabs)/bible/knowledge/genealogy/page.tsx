@@ -19,10 +19,10 @@ export default async function GenealogyListPage() {
               href={`/bible/knowledge/genealogy/${chart.id}`}
               className="block cursor-pointer px-4 py-3.5"
             >
-              <p className="text-[15px] font-bold text-text-primary">
+              <p className="text-15 font-bold text-text-primary">
                 {chart.title}
               </p>
-              <p className="mt-0.5 text-[13px] text-text-secondary">
+              <p className="mt-0.5 text-13 text-text-secondary">
                 {chart.entries.length}명
               </p>
             </Link>

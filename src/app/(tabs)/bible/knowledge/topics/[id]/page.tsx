@@ -28,12 +28,10 @@ export default async function TopicDetailPage({
           <Link
             key={index}
             href={`/bible/${card.ref.bookId}/${card.ref.chapter}`}
-            className="cursor-pointer rounded-lg bg-zinc-50 p-3.5"
+            className="cursor-pointer rounded-xl bg-input-background px-4 py-3.5"
           >
-            <p className="text-[13px] font-bold text-brown-primary">
-              {card.label}
-            </p>
-            <p className="mt-1.5 text-[15px] leading-relaxed text-text-primary">
+            <p className="text-13 font-bold text-brown-primary">{card.label}</p>
+            <p className="mt-1.5 text-15 leading-relaxed text-text-primary">
               {card.text}
             </p>
           </Link>

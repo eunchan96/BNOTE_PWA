@@ -56,12 +56,12 @@ function HymnListInner() {
           <li key={hymn.number}>
             <Link
               href={`/bible/hymns/${hymn.number}`}
-              className="flex cursor-pointer items-center gap-3 px-4 py-3"
+              className="flex cursor-pointer items-center gap-3 px-4 py-4"
             >
-              <span className="w-10 shrink-0 text-center font-bold text-brown-primary">
+              <span className="w-10 shrink-0 text-center text-15 font-bold text-brown-primary">
                 {hymn.number}
               </span>
-              <span className="text-[15px] text-text-primary">
+              <span className="min-w-0 flex-1 truncate text-base text-text-primary">
                 {hymn.title}
               </span>
             </Link>

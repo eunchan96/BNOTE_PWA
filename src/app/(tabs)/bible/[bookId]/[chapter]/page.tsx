@@ -1,17 +1,22 @@
-import BibleTopBar from "@/components/bible/BibleTopBar";
-import ScrollToVerse from "@/components/bible/ScrollToVerse";
-import VerseList from "@/components/bible/VerseList";
-import { getHighlightRangesForChapter } from "@/lib/actions/bible/highlights";
-import { getMemoVerseNumbers } from "@/lib/actions/bible/verse-memos";
-import { getWordMemosForChapter } from "@/lib/actions/bible/word-memos";
+import BibleChapterShell from "@/components/bible/BibleChapterShell";
+import {
+  getAutoScrollEnabled,
+  getReadingPlanEnabled,
+  getScrollSpeed,
+} from "@/lib/actions/bible/preferences";
 import { getChapterVerses, getChapterVersesRaw } from "@/lib/bible/bible";
-import { chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { getBook } from "@/lib/bible/bible-books";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 const DEFAULT_TRANSLATION = "NKRV";
 
+/**
+ * 이 서버 컴포넌트는 "첫 진입"(직접 URL 접속, 공유 링크, 새로고침)에서만 실행된다.
+ * 그 이후 스와이프/버튼/피커로 장을 옮기는 건 BibleChapterShell(클라이언트 컴포넌트)이
+ * 서버 라우팅 없이 직접 처리하므로, 이 컴포넌트가 다시 실행되지 않는다.
+ */
 export default async function BibleChapterPage({
   params,
   searchParams,
@@ -46,54 +51,44 @@ export default async function BibleChapterPage({
     notFound();
   }
 
-  const verses = await getChapterVerses(bookId, chapter, translation);
+  const supabase = await createClient();
+
+  const [
+    verses,
+    secondaryVerses,
+    {
+      data: { user },
+    },
+    readingPlanEnabled,
+    autoScrollEnabled,
+    scrollSpeed,
+  ] = await Promise.all([
+    getChapterVerses(bookId, chapter, translation),
+    secondary
+      ? getChapterVersesRaw(bookId, chapter, secondary)
+      : Promise.resolve(null),
+    supabase.auth.getUser(),
+    getReadingPlanEnabled(),
+    getAutoScrollEnabled(),
+    getScrollSpeed(),
+  ]);
 
   if (verses.length === 0) {
     notFound();
   }
 
-  const secondaryVerses = secondary
-    ? await getChapterVersesRaw(bookId, chapter, secondary)
-    : null;
-
-  const unit = chapterUnit(bookId);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const [initialHighlightRanges, initialWordMemos, initialMemoVerses] = user
-    ? await Promise.all([
-        getHighlightRangesForChapter(translation, bookId, chapter),
-        getWordMemosForChapter(translation, bookId, chapter),
-        getMemoVerseNumbers(bookId, chapter),
-      ])
-    : [{}, [], []];
-
   return (
-    <div className="flex flex-col">
-      <BibleTopBar
-        bookId={bookId}
-        chapter={chapter}
-        title={`${book.name} ${chapter}${unit}`}
-        translation={translation}
-        secondary={secondary}
-      />
-
-      <div className="mx-auto flex w-full max-w-2xl flex-col px-3 py-2">
-        <ScrollToVerse verse={targetVerse} />
-        <VerseList
-          bookId={bookId}
-          chapter={chapter}
-          translation={translation}
-          verses={verses}
-          secondaryVerses={secondaryVerses}
-          initialHighlightRanges={initialHighlightRanges}
-          initialWordMemos={initialWordMemos}
-          initialMemoVerses={initialMemoVerses}
-        />
-      </div>
-    </div>
+    <BibleChapterShell
+      initialBookId={bookId}
+      initialChapter={chapter}
+      initialVerse={targetVerse}
+      translation={translation}
+      secondary={secondary}
+      isLoggedIn={Boolean(user)}
+      readingPlanEnabled={readingPlanEnabled}
+      autoScrollEnabled={autoScrollEnabled}
+      scrollSpeed={scrollSpeed}
+      initialData={{ verses, secondaryVerses }}
+    />
   );
 }

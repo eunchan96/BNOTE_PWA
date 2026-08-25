@@ -9,11 +9,13 @@ export default function KnowledgeListClient({
   categorySlug,
   title,
   categoryOrder,
+  hasSearch,
   items,
 }: {
   categorySlug: string;
   title: string;
   categoryOrder: string[];
+  hasSearch: boolean;
   items: KnowledgeItem[];
 }) {
   const [keyword, setKeyword] = useState("");
@@ -47,24 +49,26 @@ export default function KnowledgeListClient({
         <h1 className="ml-1 flex-1 text-lg font-bold text-white">{title}</h1>
       </header>
 
-      <input
-        type="text"
-        value={keyword}
-        onChange={(e) => setKeyword(e.target.value)}
-        placeholder="이름 또는 내용 검색"
-        className="m-4 rounded-lg border border-divider p-3 text-base"
-      />
+      {hasSearch && (
+        <input
+          type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="이름 또는 내용 검색"
+          className="m-3 rounded-lg border border-divider p-3 text-15"
+        />
+      )}
 
       {filtered.length === 0 && (
-        <p className="p-6 text-center text-text-secondary">
-          검색 결과가 없어요
+        <p className="flex-1 p-8 text-center text-text-hint">
+          검색 결과가 없어요.
         </p>
       )}
 
       <div className="flex flex-1 flex-col overflow-y-auto">
         {orderedCategories.map((category) => (
           <div key={category}>
-            <p className="px-4 pb-1.5 pt-4 text-[13px] font-bold text-brown-primary">
+            <p className="px-4 pb-1.5 pt-4 text-13 font-bold text-brown-primary">
               {category}
             </p>
             {grouped.get(category)!.map((item) => (
@@ -73,10 +77,10 @@ export default function KnowledgeListClient({
                 href={`/bible/knowledge/${categorySlug}/${item.id}`}
                 className="block cursor-pointer px-4 py-2.5"
               >
-                <p className="text-[15px] font-bold text-text-primary">
+                <p className="text-15 font-bold text-text-primary">
                   {item.name}
                 </p>
-                <p className="mt-0.5 text-[13px] text-text-secondary">
+                <p className="mt-0.5 text-13 text-text-secondary">
                   {item.summary}
                 </p>
               </Link>

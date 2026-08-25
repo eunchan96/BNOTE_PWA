@@ -1,9 +1,12 @@
 "use client";
 
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 
 export default function SermonMenuDrawer({ onClose }: { onClose: () => void }) {
+  useLockBodyScroll();
+
   return createPortal(
     <div className="fixed inset-0 z-30 flex justify-end">
       <button

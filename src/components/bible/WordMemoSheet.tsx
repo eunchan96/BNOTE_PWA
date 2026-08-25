@@ -6,6 +6,7 @@ import {
   saveWordMemo,
   type WordMemoRow,
 } from "@/lib/actions/bible/word-memos";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -176,6 +177,8 @@ export default function WordMemoSheet({
   const firstOverlappingIndex = boxes.findIndex(
     (b) => b.kind === "overlapping",
   );
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-30 flex items-end justify-center">

@@ -196,7 +196,7 @@ function BibleSearchInner() {
       {showHistory && (
         <div className="flex flex-col">
           <div className="mb-1 mt-3 flex items-center gap-1 pl-4 pr-2">
-            <p className="flex-1 text-[13px] font-bold text-text-secondary">
+            <p className="flex-1 text-13 font-bold text-text-secondary">
               최근 검색어
             </p>
             <button
@@ -205,7 +205,7 @@ function BibleSearchInner() {
                 clearSearchHistory();
                 setHistory([]);
               }}
-              className="px-2 text-[13px] text-zinc-400 cursor-pointer"
+              className="px-2 text-13 text-zinc-400 cursor-pointer"
             >
               전체 삭제
             </button>
@@ -215,7 +215,7 @@ function BibleSearchInner() {
               <button
                 type="button"
                 onClick={() => pickHistory(word)}
-                className="flex-1 py-3 text-left text-[15px] text-text-primary cursor-pointer"
+                className="flex-1 py-3 text-left text-15 text-text-primary cursor-pointer"
               >
                 {word}
               </button>
@@ -244,7 +244,7 @@ function BibleSearchInner() {
                 onClick={() => goToResult(r)}
                 className="flex w-full gap-3 p-3 text-left cursor-pointer"
               >
-                <span className="w-16 shrink-0 font-bold text-brown-primary">
+                <span className="w-16 shrink-0 text-sm font-bold text-brown-primary">
                   {SHORT_NAMES[r.bookId - 1] ?? "?"} {r.chapter}:{r.verse}
                 </span>
                 <span className="flex-1 text-text-primary">{r.text}</span>

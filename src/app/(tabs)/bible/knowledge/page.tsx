@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const MENU_ITEMS = [
   { label: "인물사전", href: "/bible/knowledge/figures" },
-  { label: "지명사전", href: "/bible/knowledge/places" },
+  { label: "지도 (지명사전)", href: "/bible/knowledge/places" },
   { label: "족보", href: "/bible/knowledge/genealogy" },
   { label: "연대표", href: "/bible/knowledge/timeline" },
   { label: "당시 문화", href: "/bible/knowledge/culture" },
@@ -27,10 +27,17 @@ export default function KnowledgeHubPage() {
           <Link
             key={item.href}
             href={item.href}
-            className="flex cursor-pointer items-center justify-between border-b border-divider px-4 py-4"
+            className="flex cursor-pointer items-center justify-between border-b border-divider p-[18px]"
           >
-            <span className="text-[15px] text-text-primary">{item.label}</span>
-            <span className="text-zinc-400">›</span>
+            <span className="text-base text-text-primary">{item.label}</span>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="var(--color-text-hint)"
+            >
+              <path d="M8.59,16.59L10,18l6,-6 -6,-6 -1.41,1.41L13.17,12z" />
+            </svg>
           </Link>
         ))}
       </div>

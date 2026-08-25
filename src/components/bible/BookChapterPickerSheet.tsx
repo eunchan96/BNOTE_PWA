@@ -2,9 +2,24 @@
 
 import { getVerseCounts } from "@/lib/actions/bible/bible-queries";
 import { BIBLE_BOOKS, chapterUnit, getBook } from "@/lib/bible/bible-books";
+import { useLockBodyScroll } from "@/lib/use-lock-body-scroll";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+
+const verseCountsCache = new Map<string, Record<string, number>>();
+
+/** 다른 컴포넌트(BibleTopBar)에서 화면이 뜨자마자 미리 백그라운드로 받아두기 위해 export.
+ * 그러면 사용자가 실제로 피커를 열었을 때는 이미 캐시에 준비돼 있어서 첫 열람도 즉시 뜬다. */
+export async function getCachedVerseCounts(
+  translation: string,
+): Promise<Record<string, number>> {
+  const cached = verseCountsCache.get(translation);
+  if (cached) return cached;
+  const table = await getVerseCounts(translation);
+  verseCountsCache.set(translation, table);
+  return table;
+}
 
 type Step = "book" | "chapter" | "verse";
 
@@ -28,7 +43,7 @@ export default function BookChapterPickerSheet({
   );
 
   useEffect(() => {
-    getVerseCounts(translation).then(setVerseCounts);
+    getCachedVerseCounts(translation).then(setVerseCounts);
   }, [translation]);
 
   const selectedBook =
@@ -62,12 +77,18 @@ export default function BookChapterPickerSheet({
   }
 
   function pickVerse(verse: number) {
-    const suffix = secondary ? `&secondary=${secondary}` : "";
-    router.push(
-      `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}${suffix}`,
-    );
+    if (window.__bnoteBibleShellGoTo) {
+      window.__bnoteBibleShellGoTo(selectedBookId, selectedChapter, verse);
+    } else {
+      const suffix = secondary ? `&secondary=${secondary}` : "";
+      router.push(
+        `/bible/${selectedBookId}/${selectedChapter}?translation=${translation}&verse=${verse}${suffix}`,
+      );
+    }
     onClose();
   }
+
+  useLockBodyScroll();
 
   return createPortal(
     <div className="fixed inset-0 z-20 flex items-end justify-center">
@@ -106,7 +127,7 @@ export default function BookChapterPickerSheet({
 
         <div className="border-t border-divider" />
 
-        <div className="h-[420px] overflow-y-auto p-2">
+        <div key={step} className="h-[420px] overflow-y-auto p-2">
           {step === "book" && (
             <div className="flex flex-col gap-2 p-1">
               <div className="grid grid-cols-4 gap-2">
@@ -120,7 +141,7 @@ export default function BookChapterPickerSheet({
                       className={`cursor-pointer rounded-lg px-1 py-4 text-center text-[13px] ${
                         isSelected
                           ? "bg-brown-primary text-white"
-                          : "bg-zinc-100 text-zinc-800"
+                          : "bg-input-background text-text-primary"
                       }`}
                     >
                       {book.name}
@@ -139,7 +160,7 @@ export default function BookChapterPickerSheet({
                       className={`cursor-pointer rounded-lg px-1 py-4 text-center text-[13px] ${
                         isSelected
                           ? "bg-brown-primary text-white"
-                          : "bg-zinc-100 text-zinc-800"
+                          : "bg-input-background text-text-primary"
                       }`}
                     >
                       {book.name}
@@ -221,10 +242,10 @@ function NumberGrid({
           key={value}
           type="button"
           onClick={() => onSelect(value)}
-          className={`flex h-11 items-center justify-center rounded-lg text-sm ${
+          className={`flex h-12 items-center justify-center rounded-lg text-sm ${
             value === selected
               ? "bg-brown-primary text-white"
-              : "bg-zinc-100 text-zinc-800"
+              : "bg-input-background text-text-primary"
           } cursor-pointer`}
         >
           {value}
